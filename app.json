@@ -43,8 +43,5 @@
 				}
 			]
 		],
-		"experiments": {
-			"typedRoutes": true
-		}
 	}
 }
