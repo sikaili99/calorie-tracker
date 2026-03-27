@@ -27,13 +27,14 @@ import { borderRadius } from "@/constants/Theme"
 import { TabSelector } from "@/components/searchFoodPage/TabSelector"
 import { SearchBar } from "@/components/searchFoodPage/SearchBar"
 import { ThemedText } from "@/components/ThemedText"
+import { BACKEND_BASE_URL } from "@/constants/BackendConfig"
 
-const foodCategoryTabs = ["generic", "branded"] as const
+const foodCategoryTabs = ["generic", "branded", "ai"] as const
 type FoodCategoryTab = (typeof foodCategoryTabs)[number]
 
 export default function SearchFood() {
 	const theme = useThemeColor()
-	const { branded, generic, handleSearch } = useSearchFood()
+	const { branded, generic, ai, handleSearch } = useSearchFood()
 
 	const windowWidth = useMemo(() => Dimensions.get("window").width, [])
 
@@ -52,27 +53,6 @@ export default function SearchFood() {
 					backgroundColor: theme.surface,
 					paddingTop: 16,
 				},
-				searchBox: {
-					height: 56,
-					borderRadius: borderRadius,
-					padding: 8,
-					color: theme.text,
-					backgroundColor: theme.onSurface,
-					flexDirection: "row",
-					alignItems: "center",
-					paddingHorizontal: 16,
-					marginHorizontal: 16,
-					gap: 16,
-					justifyContent: "flex-start",
-				},
-				textInput: {
-					flex: 1,
-					fontSize: 16,
-					fontWeight: "600",
-					backgroundColor: theme.onSurface,
-					color: theme.text,
-					paddingVertical: 0,
-				},
 				foodListContainer: {
 					width: windowWidth + 1,
 					marginTop: 16,
@@ -83,15 +63,22 @@ export default function SearchFood() {
 					flex: 1,
 					justifyContent: "center",
 					alignItems: "center",
+					paddingTop: 48,
+				},
+				aiHint: {
+					paddingHorizontal: 4,
+					paddingVertical: 8,
+					marginBottom: 8,
 				},
 			}),
-		[theme, branded, generic, windowWidth]
+		[theme, windowWidth]
 	)
 
 	const textInputRef = useRef<TextInput>(null)
 	const { goBack } = useLocalSearchParams()
 	const { setFood } = useContext(SelectionContext)
-	const [selectedTab, setSelectedTab] = useState<FoodCategoryTab>("generic")
+	const [selectedTab, setSelectedTab] =
+		useState<FoodCategoryTab>("generic")
 	const [searchQuery, setSearchQuery] = useState("")
 
 	useNavigationBarColor(theme.background)
@@ -111,14 +98,13 @@ export default function SearchFood() {
 
 	const handleSearchType = useCallback(() => {
 		const trimmedQuery = searchQuery.trim()
-		if (selectedTab === "generic" && generic.lastQuery === trimmedQuery) {
+		if (selectedTab === "generic" && generic.lastQuery === trimmedQuery)
 			return
-		}
-		if (selectedTab === "branded" && branded.lastQuery === trimmedQuery) {
+		if (selectedTab === "branded" && branded.lastQuery === trimmedQuery)
 			return
-		}
+		if (selectedTab === "ai" && ai.lastQuery === trimmedQuery) return
 		handleSearch(selectedTab, trimmedQuery)
-	}, [handleSearch, selectedTab, searchQuery, generic, branded])
+	}, [handleSearch, selectedTab, searchQuery, generic, branded, ai])
 
 	useEffect(() => {
 		handleSearchType()
@@ -136,16 +122,25 @@ export default function SearchFood() {
 
 	useEffect(() => {
 		if (scrollViewRef.current) {
+			const tabIndex = foodCategoryTabs.indexOf(selectedTab)
 			scrollViewRef.current.scrollTo({
-				x: selectedTab === "generic" ? 0 : windowWidth,
+				x: tabIndex * windowWidth,
 				animated: true,
 			})
 		}
-	}, [selectedTab, windowWidth, scrollViewRef])
+	}, [selectedTab, windowWidth])
 
 	const handleRequestFocus = useCallback(() => {
 		textInputRef.current?.focus()
-	}, [textInputRef])
+	}, [])
+
+	const isBackendLocalhost = BACKEND_BASE_URL.includes("localhost")
+
+	const getTabState = (tab: FoodCategoryTab) => {
+		if (tab === "generic") return generic
+		if (tab === "branded") return branded
+		return { ...ai, isError: !!ai.error }
+	}
 
 	return (
 		<View style={styles.mainContainer}>
@@ -169,45 +164,70 @@ export default function SearchFood() {
 			</View>
 			<ScrollView
 				ref={scrollViewRef}
-				contentContainerStyle={{
-					flexGrow: 1,
-				}}
+				contentContainerStyle={{ flexGrow: 1 }}
 				horizontal
 				showsHorizontalScrollIndicator={false}
 				pagingEnabled
 				scrollEnabled={false}
 			>
-				{foodCategoryTabs.map((tab) => (
-					<View key={tab} style={styles.foodListContainer}>
-						{(tab === "generic" ? generic : branded).isLoading ? (
-							<View style={styles.loading}>
-								<ActivityIndicator
-									color={theme.primary}
-									size="large"
-								/>
-							</View>
-						) : (tab === "generic" ? generic : branded).error ? (
-							<ThemedText>
-								{(tab === "generic" ? generic : branded).error}
-							</ThemedText>
-						) : (tab === "generic" ? generic : branded)
-								.lastQuery ? (
-							<FlatList
-								showsVerticalScrollIndicator={false}
-								data={
-									(tab === "generic" ? generic : branded).data
-								}
-								keyExtractor={(item) => item.id!.toString()}
-								renderItem={({ item }) => (
-									<FoodSearchCard
-										food={item}
-										onTap={() => handleTapFood(item)}
+				{foodCategoryTabs.map((tab) => {
+					const state = getTabState(tab)
+					return (
+						<View key={tab} style={styles.foodListContainer}>
+							{tab === "ai" && !state.lastQuery && (
+								<View style={styles.aiHint}>
+									<ThemedText type="subtitleLight">
+										Describe what you ate in plain
+										language.{"\n"}e.g. "grilled chicken
+										with rice and broccoli"
+									</ThemedText>
+									{isBackendLocalhost && (
+										<ThemedText
+											type="subtitleLight"
+											color="#F59E0B"
+											style={{ marginTop: 8 }}
+										>
+											Backend not connected. AI search
+											requires a running server.
+										</ThemedText>
+									)}
+								</View>
+							)}
+							{state.isLoading ? (
+								<View style={styles.loading}>
+									<ActivityIndicator
+										color={theme.primary}
+										size="large"
 									/>
-								)}
-							/>
-						) : null}
-					</View>
-				))}
+									{tab === "ai" && (
+										<ThemedText
+											type="subtitleLight"
+											style={{ marginTop: 12 }}
+										>
+											Parsing your description…
+										</ThemedText>
+									)}
+								</View>
+							) : state.error ? (
+								<ThemedText>{state.error}</ThemedText>
+							) : state.lastQuery ? (
+								<FlatList
+									showsVerticalScrollIndicator={false}
+									data={state.data}
+									keyExtractor={(item) =>
+										item.id!.toString()
+									}
+									renderItem={({ item }) => (
+										<FoodSearchCard
+											food={item}
+											onTap={() => handleTapFood(item)}
+										/>
+									)}
+								/>
+							) : null}
+						</View>
+					)
+				})}
 			</ScrollView>
 		</View>
 	)

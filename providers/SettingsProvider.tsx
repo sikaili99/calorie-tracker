@@ -8,6 +8,10 @@ import React, {
 } from "react"
 import * as Crypto from "expo-crypto"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import {
+	scheduleDailyReminder,
+	cancelDailyReminder,
+} from "@/utils/notifications"
 
 interface SettingsContextProps {
 	targetCalories: number | undefined
@@ -16,11 +20,16 @@ interface SettingsContextProps {
 	targetFatPercentage: number | undefined
 	usdaApiKey: string | undefined
 	userUuid: string | undefined
+	notificationsEnabled: boolean
+	reminderHour: number
+	reminderMinute: number
 	updateTargetCalories: (value: number) => void
 	updateTargetCarbsPercentage: (value: number) => void
 	updateTargetProteinPercentage: (value: number) => void
 	updateTargetFatPercentage: (value: number) => void
 	updateUsdaApiKey: (value?: string) => void
+	updateNotificationsEnabled: (value: boolean) => void
+	updateReminderTime: (hour: number, minute: number) => void
 }
 
 const SettingsContext = createContext<SettingsContextProps | undefined>(
@@ -37,6 +46,9 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 		targetFatPercentage: number | undefined
 		usdaApiKey: string | undefined
 		userUuid: string | undefined
+		notificationsEnabled: boolean
+		reminderHour: number
+		reminderMinute: number
 	}>({
 		targetCalories: undefined,
 		targetCarbsPercentage: undefined,
@@ -44,6 +56,9 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 		targetFatPercentage: undefined,
 		usdaApiKey: undefined,
 		userUuid: undefined,
+		notificationsEnabled: false,
+		reminderHour: 20,
+		reminderMinute: 0,
 	})
 
 	const getStoredSetting = useCallback(
@@ -91,6 +106,15 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 				await AsyncStorage.setItem("USER_UUID", JSON.stringify(uuid))
 				userUuid = uuid
 			}
+			const notificationsEnabledRaw = await getStoredSetting<
+				boolean | number
+			>("NOTIFICATIONS_ENABLED", false)
+			const notificationsEnabled = Boolean(notificationsEnabledRaw)
+			const reminderHour = await getStoredSetting("REMINDER_HOUR", 20)
+			const reminderMinute = await getStoredSetting(
+				"REMINDER_MINUTE",
+				0
+			)
 			setSettings({
 				targetCalories,
 				targetCarbsPercentage,
@@ -98,11 +122,51 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 				targetFatPercentage,
 				usdaApiKey,
 				userUuid,
+				notificationsEnabled,
+				reminderHour,
+				reminderMinute,
 			})
 		}
 
 		loadSettings()
 	}, [getStoredSetting])
+
+	const updateNotificationsEnabled = useCallback(
+		async (value: boolean) => {
+			await updateSetting(
+				"NOTIFICATIONS_ENABLED",
+				"notificationsEnabled",
+				value ? 1 : 0
+			)
+			if (!value) {
+				await cancelDailyReminder()
+			} else {
+				const hour = settings.reminderHour ?? 20
+				const minute = settings.reminderMinute ?? 0
+				await scheduleDailyReminder(hour, minute)
+			}
+		},
+		[updateSetting, settings.reminderHour, settings.reminderMinute]
+	)
+
+	const updateReminderTime = useCallback(
+		async (hour: number, minute: number) => {
+			await AsyncStorage.setItem("REMINDER_HOUR", JSON.stringify(hour))
+			await AsyncStorage.setItem(
+				"REMINDER_MINUTE",
+				JSON.stringify(minute)
+			)
+			setSettings((prev) => ({
+				...prev,
+				reminderHour: hour,
+				reminderMinute: minute,
+			}))
+			if (settings.notificationsEnabled) {
+				await scheduleDailyReminder(hour, minute)
+			}
+		},
+		[settings.notificationsEnabled]
+	)
 
 	const contextValue = useMemo(
 		() => ({
@@ -129,8 +193,10 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 				),
 			updateUsdaApiKey: (value?: string) =>
 				updateSetting("USDA_API_KEY", "usdaApiKey", value),
+			updateNotificationsEnabled,
+			updateReminderTime,
 		}),
-		[settings, updateSetting]
+		[settings, updateSetting, updateNotificationsEnabled, updateReminderTime]
 	)
 
 	return (

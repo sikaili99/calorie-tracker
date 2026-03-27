@@ -420,6 +420,166 @@ export const useDatabase = () => {
 		[db]
 	)
 
+	const fetchHistoricalEntries = useCallback(
+		async (days: number) => {
+			if (!db) throw dbNotInitializedError
+			const rows = ((await db.getAllAsync(
+				`SELECT date,
+					SUM(kcal_total)    AS kcal,
+					SUM(protein_total) AS protein,
+					SUM(carbs_total)   AS carbs,
+					SUM(fat_total)     AS fat
+				 FROM diary_entries
+				 WHERE date >= DATE('now', '-' || ? || ' days')
+				 GROUP BY date
+				 ORDER BY date ASC`,
+				[days]
+			)) || []) as {
+				date: ISODateString
+				kcal: number
+				protein: number
+				carbs: number
+				fat: number
+			}[]
+			return rows
+		},
+		[db]
+	)
+
+	const fetchMealBreakdownHistory = useCallback(
+		async (days: number) => {
+			if (!db) throw dbNotInitializedError
+			const rows = ((await db.getAllAsync(
+				`SELECT date, meal_type, SUM(kcal_total) AS meal_kcal
+				 FROM diary_entries
+				 WHERE date >= DATE('now', '-' || ? || ' days')
+				 GROUP BY date, meal_type`,
+				[days]
+			)) || []) as {
+				date: ISODateString
+				meal_type: number
+				meal_kcal: number
+			}[]
+			return rows
+		},
+		[db]
+	)
+
+	const fetchSuggestedFoods = useCallback(
+		async (mealType: number): Promise<Food[]> => {
+			if (!db) throw dbNotInitializedError
+			const rows = ((await db.getAllAsync(
+				`SELECT fv.*,
+					SUM(CASE WHEN de.meal_type = ? THEN 3 ELSE 1 END) AS meal_type_score,
+					COUNT(de.id) AS usage_count
+				 FROM food_view fv
+				 JOIN diary_entries de ON fv.id = de.food_id
+				 WHERE de.date >= DATE('now', '-60 days')
+				   AND fv.serving_quantity > 0
+				 GROUP BY fv.id
+				 ORDER BY meal_type_score DESC, usage_count DESC
+				 LIMIT 20`,
+				[mealType]
+			)) || []) as (DbFood & {
+				meal_type_score: number
+				usage_count: number
+			})[]
+			return rows.map((row) => ({
+				id: row.id,
+				name: row.name,
+				brand: row.brand,
+				isCustomEntry: row.is_custom_entry === 1,
+				isCustomFood: row.is_custom_food === 1,
+				servingQuantity: row.serving_quantity,
+				caloriesPer100g: row.energy_100g,
+				proteinPer100g: row.protein_100g,
+				carbsPer100g: row.carbs_100g,
+				fatPer100g: row.fat_100g,
+				isFavorite: row.is_favorite === 1,
+			}))
+		},
+		[db]
+	)
+
+	const fetchWeeklyData = useCallback(
+		async (weekStartDate: ISODateString) => {
+			if (!db) throw dbNotInitializedError
+			// 7 days from the start date
+			const rows = ((await db.getAllAsync(
+				`SELECT date,
+					SUM(kcal_total)    AS kcal,
+					SUM(protein_total) AS protein,
+					SUM(carbs_total)   AS carbs,
+					SUM(fat_total)     AS fat
+				 FROM diary_entries
+				 WHERE date >= ?
+				   AND date < DATE(?, '+7 days')
+				 GROUP BY date
+				 ORDER BY date ASC`,
+				[weekStartDate, weekStartDate]
+			)) || []) as {
+				date: ISODateString
+				kcal: number
+				protein: number
+				carbs: number
+				fat: number
+			}[]
+			return rows
+		},
+		[db]
+	)
+
+	const fetchAverageIntake = useCallback(
+		async (days: number) => {
+			if (!db) throw dbNotInitializedError
+			const row = (await db.getFirstAsync(
+				`SELECT
+					AVG(daily_kcal)    AS avg_kcal,
+					AVG(daily_protein) AS avg_protein,
+					AVG(daily_carbs)   AS avg_carbs,
+					AVG(daily_fat)     AS avg_fat,
+					COUNT(*)           AS days_logged
+				 FROM (
+					SELECT date,
+						SUM(kcal_total)    AS daily_kcal,
+						SUM(protein_total) AS daily_protein,
+						SUM(carbs_total)   AS daily_carbs,
+						SUM(fat_total)     AS daily_fat
+					FROM diary_entries
+					WHERE date >= DATE('now', '-' || ? || ' days')
+					GROUP BY date
+				 )`,
+				[days]
+			)) as {
+				avg_kcal: number | null
+				avg_protein: number | null
+				avg_carbs: number | null
+				avg_fat: number | null
+				days_logged: number
+			} | null
+			return row
+		},
+		[db]
+	)
+
+	const fetchStreakData = useCallback(async (): Promise<ISODateString[]> => {
+		if (!db) throw dbNotInitializedError
+		const rows = ((await db.getAllAsync(
+			`SELECT DISTINCT date FROM diary_entries
+			 WHERE date >= DATE('now', '-365 days')
+			 ORDER BY date DESC`
+		)) || []) as { date: ISODateString }[]
+		return rows.map((r) => r.date)
+	}, [db])
+
+	const fetchTotalEntryCount = useCallback(async (): Promise<number> => {
+		if (!db) throw dbNotInitializedError
+		const row = (await db.getFirstAsync(
+			"SELECT COUNT(*) as count FROM diary_entries"
+		)) as { count: number } | null
+		return row?.count ?? 0
+	}, [db])
+
 	return {
 		fetchDiaryEntries,
 		addDiaryEntry,
@@ -430,5 +590,12 @@ export const useDatabase = () => {
 		isFoodFavorite,
 		addFavoriteFood,
 		deleteFavoriteFood,
+		fetchStreakData,
+		fetchTotalEntryCount,
+		fetchHistoricalEntries,
+		fetchMealBreakdownHistory,
+		fetchSuggestedFoods,
+		fetchWeeklyData,
+		fetchAverageIntake,
 	}
 }

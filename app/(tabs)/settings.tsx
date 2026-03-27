@@ -1,5 +1,5 @@
 import { Header } from "@/components/Header"
-import { View, StyleSheet } from "react-native"
+import { View, StyleSheet, Switch } from "react-native"
 import { useSettings } from "@/providers/SettingsProvider"
 import { useMemo, useCallback, useState, useEffect } from "react"
 import { useThemeColor } from "@/hooks/useThemeColor"
@@ -7,6 +7,8 @@ import { SettingItem } from "@/components/SettingItem"
 import { CustomTextInput } from "@/components/CustomTextInput"
 import { ThemedText } from "@/components/ThemedText"
 import { USDA_API_KEY_DEFAULT } from "@/api/UsdaApi"
+import { borderRadius } from "@/constants/Theme"
+import { TargetSuggestionBanner } from "@/components/TargetSuggestionBanner"
 
 export default function Index() {
 	const theme = useThemeColor()
@@ -16,11 +18,16 @@ export default function Index() {
 		targetFatPercentage,
 		targetProteinPercentage,
 		usdaApiKey,
+		notificationsEnabled,
+		reminderHour,
+		reminderMinute,
 		updateTargetCalories,
 		updateTargetCarbsPercentage,
 		updateTargetFatPercentage,
 		updateTargetProteinPercentage,
 		updateUsdaApiKey,
+		updateNotificationsEnabled,
+		updateReminderTime,
 	} = useSettings()
 
 	const styles = useMemo(
@@ -32,9 +39,37 @@ export default function Index() {
 				contentContainer: {
 					flex: 1,
 				},
+				notificationRow: {
+					flexDirection: "row",
+					alignItems: "center",
+					justifyContent: "space-between",
+					paddingHorizontal: 16,
+					paddingVertical: 14,
+					backgroundColor: theme.surface,
+					marginHorizontal: 16,
+					marginTop: 8,
+					borderRadius,
+				},
+				notificationLabel: {
+					flex: 1,
+				},
+				sectionHeader: {
+					marginHorizontal: 16,
+					marginTop: 20,
+					marginBottom: 4,
+				},
 			}),
 		[theme]
 	)
+
+	const reminderTimeLabel = useMemo(() => {
+		const h = reminderHour ?? 20
+		const m = reminderMinute ?? 0
+		const period = h >= 12 ? "PM" : "AM"
+		const displayH = h % 12 === 0 ? 12 : h % 12
+		const displayM = m.toString().padStart(2, "0")
+		return `${displayH}:${displayM} ${period}`
+	}, [reminderHour, reminderMinute])
 
 	const allSettingsLoaded = useMemo(
 		() =>
@@ -110,6 +145,7 @@ export default function Index() {
 	return (
 		<View style={styles.mainContainer}>
 			<Header title="Settings" />
+			<TargetSuggestionBanner />
 			<View style={styles.contentContainer}>
 				{allSettingsLoaded ? (
 					<>
@@ -223,6 +259,32 @@ export default function Index() {
 								}
 							/>
 						</SettingItem>
+						<ThemedText
+							type="subtitleBold"
+							style={styles.sectionHeader}
+						>
+							Reminders
+						</ThemedText>
+						<View style={styles.notificationRow}>
+							<View style={styles.notificationLabel}>
+								<ThemedText type="defaultSemiBold">
+									Daily Reminder
+								</ThemedText>
+								<ThemedText type="subtitleLight">
+									Remind me to log my meals at{" "}
+									{reminderTimeLabel}
+								</ThemedText>
+							</View>
+							<Switch
+								value={notificationsEnabled}
+								onValueChange={updateNotificationsEnabled}
+								trackColor={{
+									false: theme.onSurface,
+									true: theme.primary,
+								}}
+								thumbColor={theme.surface}
+							/>
+						</View>
 					</>
 				) : null}
 			</View>

@@ -4,6 +4,7 @@ import { CustomPressable } from "@/components/CustomPressable"
 import { DismissKeyboard } from "@/components/DismissKeyboard"
 import { GenericListItem } from "@/components/GenericListItem"
 import { Header } from "@/components/Header"
+import { SuggestedFoodsRow } from "@/components/SuggestedFoodsRow"
 import { TabSelector } from "@/components/searchFoodPage/TabSelector"
 import { ThemedText } from "@/components/ThemedText"
 import { borderRadius } from "@/constants/Theme"
@@ -12,10 +13,12 @@ import { useFood } from "@/hooks/useFoods"
 import useNavigationBarColor from "@/hooks/useNavigationBarColor"
 import { useNutritionData } from "@/hooks/useNutritionData"
 import { useThemeColor } from "@/hooks/useThemeColor"
+import { useSettings } from "@/providers/SettingsProvider"
 import { SelectionContext } from "@/providers/SelectionProvider"
 import { generateDatabaseId } from "@/utils/Ids"
 import { getMealTypeLabel } from "@/utils/Meals"
 import { capitalizeFirstLetter } from "@/utils/Strings"
+import { scoreAndRankFoods } from "@/utils/foodScoring"
 import { Ionicons } from "@expo/vector-icons"
 import { router } from "expo-router"
 import React, {
@@ -40,8 +43,16 @@ export default function AddFood() {
 	const theme = useThemeColor()
 	const { meal, setFood } = useContext(SelectionContext)
 	const { favoriteFoods, mostUsedFoods } = useFood()
-	const { addDiaryEntry } = useDatabase()
+	const { addDiaryEntry, fetchSuggestedFoods } = useDatabase()
 	const [isMenuVisible, setMenuVisible] = useState(false)
+	const [suggestedFoods, setSuggestedFoods] = useState<Food[]>([])
+
+	const {
+		targetCalories,
+		targetCarbsPercentage,
+		targetProteinPercentage,
+		targetFatPercentage,
+	} = useSettings()
 
 	useNavigationBarColor(theme.background)
 	const windowWidth = useMemo(() => Dimensions.get("window").width, [])
@@ -147,6 +158,50 @@ export default function AddFood() {
 	const { mealDiaryEntries, refetchDiaryEntries } = useNutritionData({
 		date: today,
 	})
+
+	// Compute macro gaps for smart suggestions
+	const macroGaps = useMemo(() => {
+		if (
+			!targetCalories ||
+			!targetCarbsPercentage ||
+			!targetProteinPercentage ||
+			!targetFatPercentage ||
+			!mealDiaryEntries
+		) {
+			return { protein: 50, carbs: 100, fat: 30 }
+		}
+		const targetProtein =
+			(targetCalories * targetProteinPercentage) / 100 / 4
+		const targetCarbs =
+			(targetCalories * targetCarbsPercentage) / 100 / 4
+		const targetFat = (targetCalories * targetFatPercentage) / 100 / 9
+		const all = mealDiaryEntries.all
+		const eatenProtein = all.reduce((s, e) => s + e.proteinTotal, 0)
+		const eatenCarbs = all.reduce((s, e) => s + e.carbsTotal, 0)
+		const eatenFat = all.reduce((s, e) => s + e.fatTotal, 0)
+		return {
+			protein: targetProtein - eatenProtein,
+			carbs: targetCarbs - eatenCarbs,
+			fat: targetFat - eatenFat,
+		}
+	}, [
+		targetCalories,
+		targetCarbsPercentage,
+		targetProteinPercentage,
+		targetFatPercentage,
+		mealDiaryEntries,
+	])
+
+	// Fetch and score suggested foods for this meal type
+	useEffect(() => {
+		if (!meal) return
+		fetchSuggestedFoods(meal)
+			.then((foods) => {
+				const scored = scoreAndRankFoods(foods, macroGaps)
+				setSuggestedFoods(scored.slice(0, 8))
+			})
+			.catch(() => {})
+	}, [meal, fetchSuggestedFoods, macroGaps])
 
 	const handleQrPress = useCallback(() => {
 		router.push({ pathname: "/barcodeScanner" })
@@ -311,7 +366,11 @@ export default function AddFood() {
 							}
 						/>
 					)}
-					<View style={styles.searchRow}>
+					<SuggestedFoodsRow
+						foods={suggestedFoods}
+						onFoodPress={handleFoodPress}
+					/>
+				<View style={styles.searchRow}>
 						<TouchableOpacity
 							style={styles.searchBox}
 							activeOpacity={0.6}

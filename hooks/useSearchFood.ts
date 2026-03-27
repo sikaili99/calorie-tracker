@@ -5,9 +5,10 @@ import {
 	USDA_API_KEY_DEFAULT,
 } from "@/api/UsdaApi"
 import { searchByName as searchByNameOpenFoodFacts } from "@/api/OpenFoodFactsAPI"
+import { BackendAPI, buildNutritionContext } from "@/api/BackendAPI"
 import { useSettings } from "@/providers/SettingsProvider"
 
-export type SearchType = "generic" | "branded"
+export type SearchType = "generic" | "branded" | "ai"
 
 interface SearchState {
 	searchQuery: string
@@ -105,24 +106,115 @@ const useBrandedSearch = () => {
 	return useSearch(searchByNameOpenFoodFacts, userUuid ?? "")
 }
 
+interface AISearchState {
+	data: Food[]
+	isLoading: boolean
+	error: string | null
+	lastQuery: string | null
+}
+
 export const useSearchFood = () => {
 	const generic = useGenericSearch()
 	const branded = useBrandedSearch()
+	const { usdaApiKey } = useSettings()
+
+	const [aiState, setAIState] = useState<AISearchState>({
+		data: [],
+		isLoading: false,
+		error: null,
+		lastQuery: null,
+	})
+
+	const handleAISearch = useCallback(
+		async (description: string) => {
+			const trimmed = description.trim()
+			if (!trimmed) return
+
+			setAIState({
+				data: [],
+				isLoading: true,
+				error: null,
+				lastQuery: trimmed,
+			})
+
+			try {
+				// Use a minimal context (no diary data needed for parsing)
+				const context = buildNutritionContext({
+					targetCalories: 2200,
+					targetProtein: 137,
+					targetCarbs: 275,
+					targetFat: 61,
+					todayCalories: 0,
+					todayProtein: 0,
+					todayCarbs: 0,
+					todayFat: 0,
+					recentHistory: [],
+					favoriteFoods: [],
+				})
+
+				let parsed = await BackendAPI.parseFoodDescription(
+					trimmed,
+					context
+				).catch(() => null)
+
+				// Fallback: treat the whole description as a single search query
+				if (!parsed || parsed.length === 0) {
+					parsed = [{ searchQuery: trimmed, estimatedGrams: 100 }]
+				}
+
+				const apiKey = usdaApiKey ?? USDA_API_KEY_DEFAULT
+				const results = await Promise.all(
+					parsed.map(async (item) => {
+						const foods = await searchByNameUsda(
+							item.searchQuery,
+							apiKey
+						).catch(() => [] as Food[])
+						// Attach the estimated quantity as servingQuantity hint
+						return foods.slice(0, 3).map((f) => ({
+							...f,
+							servingQuantity:
+								item.estimatedGrams > 0
+									? item.estimatedGrams
+									: f.servingQuantity,
+						}))
+					})
+				)
+
+				setAIState({
+					data: results.flat(),
+					isLoading: false,
+					error: null,
+					lastQuery: trimmed,
+				})
+			} catch (e) {
+				setAIState((prev) => ({
+					...prev,
+					isLoading: false,
+					error: "AI search is unavailable. Check your connection.",
+				}))
+			}
+		},
+		[usdaApiKey]
+	)
 
 	const handleSearch = useCallback(
 		async (type: SearchType, query?: string) => {
 			if (type === "generic") {
 				await generic.search(query)
-			} else {
+			} else if (type === "branded") {
 				await branded.search(query)
+			} else if (type === "ai" && query) {
+				await handleAISearch(query)
 			}
 		},
-		[generic, branded]
+		[generic, branded, handleAISearch]
 	)
 
 	return {
 		generic,
 		branded,
+		ai: aiState,
 		handleSearch,
+		handleAISearch,
 	}
 }

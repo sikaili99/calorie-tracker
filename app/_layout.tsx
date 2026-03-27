@@ -107,6 +107,19 @@ export default function RootLayout() {
 												headerShown: false,
 											}}
 										/>
+										<Stack.Screen
+											name="photoLogger"
+											options={{
+												headerShown: false,
+												animation: "slide_from_bottom",
+											}}
+										/>
+										<Stack.Screen
+											name="photoLogReview"
+											options={{
+												headerShown: false,
+											}}
+										/>
 									</Stack>
 									<StatusBar style="auto" />
 								</View>

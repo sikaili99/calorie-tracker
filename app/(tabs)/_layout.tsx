@@ -51,6 +51,64 @@ export default function TabLayout() {
 				}}
 			/>
 			<Tabs.Screen
+				name="coach"
+				listeners={{
+					tabPress: handleTabPress,
+				}}
+				options={{
+					title: "Coach",
+					headerShown: false,
+					tabBarLabelStyle: styles.label,
+					tabBarIcon: ({ color, focused }) => (
+						<Ionicons
+							name={
+								focused
+									? "chatbubble-ellipses"
+									: "chatbubble-ellipses-outline"
+							}
+							color={color}
+							size={24}
+						/>
+					),
+				}}
+			/>
+			<Tabs.Screen
+				name="achievements"
+				listeners={{
+					tabPress: handleTabPress,
+				}}
+				options={{
+					title: "Achievements",
+					headerShown: false,
+					tabBarLabelStyle: styles.label,
+					tabBarIcon: ({ color, focused }) => (
+						<Ionicons
+							name={focused ? "trophy" : "trophy-outline"}
+							color={color}
+							size={24}
+						/>
+					),
+				}}
+			/>
+			<Tabs.Screen
+				name="history"
+				listeners={{
+					tabPress: handleTabPress,
+				}}
+				options={{
+					title: "History",
+					headerShown: false,
+					tabBarLabelStyle: styles.label,
+					tabBarIcon: ({ color, focused }) => (
+						<Ionicons
+							name={focused ? "calendar" : "calendar-outline"}
+							color={color}
+							size={24}
+						/>
+					),
+				}}
+			/>
+			<Tabs.Screen
 				name="settings"
 				listeners={{
 					tabPress: handleTabPress,

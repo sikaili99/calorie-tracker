@@ -80,6 +80,14 @@ export const MealsSummary = ({ meals }: MealsSummaryProps) => {
 		router.push(`/addFood`)
 	}, [])
 
+	const handlePhotoLog = useCallback(({ meal }: { meal: MealType }) => {
+		setMeal(meal)
+		router.push({
+			pathname: `/photoLogger`,
+			params: { meal: meal.toString() },
+		})
+	}, [])
+
 	const handlePressCard = useCallback((meal: MealType) => {
 		setMeal(meal)
 		router.push(`/meal`)
@@ -128,6 +136,17 @@ export const MealsSummary = ({ meals }: MealsSummaryProps) => {
 											{foods}
 										</ThemedText>
 									</View>
+									<TouchableOpacity
+										hitSlop={8}
+										style={[styles.button, { marginRight: 4 }]}
+										onPress={() => handlePhotoLog({ meal })}
+									>
+										<Ionicons
+											name="camera-outline"
+											size={22}
+											color={theme.text}
+										/>
+									</TouchableOpacity>
 									<TouchableOpacity
 										hitSlop={8}
 										style={styles.button}

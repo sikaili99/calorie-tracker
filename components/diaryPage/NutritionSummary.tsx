@@ -6,6 +6,8 @@ import { useThemeColor } from "@/hooks/useThemeColor"
 import { borderRadius } from "@/constants/Theme"
 import { MacroProgress } from "./MacroProgress"
 import { CalorieSummaryProgress } from "./CalorieSummaryProgress"
+import { MacroBalanceCard } from "./MacroBalanceCard"
+import { MacroTargets } from "@/utils/macroAdvice"
 
 interface NutritionSummaryProps {
 	eatenCalories: number
@@ -16,6 +18,8 @@ interface NutritionSummaryProps {
 	totalProtein: number
 	eatenFat: number
 	totalFat: number
+	projectedCalories?: number
+	macroTargets?: MacroTargets
 }
 
 export const NutritionSummary = ({
@@ -27,6 +31,8 @@ export const NutritionSummary = ({
 	totalProtein,
 	eatenFat,
 	totalFat,
+	projectedCalories,
+	macroTargets,
 }: NutritionSummaryProps) => {
 	const theme = useThemeColor()
 	const styles = useMemo(
@@ -67,6 +73,11 @@ export const NutritionSummary = ({
 					flexDirection: "column",
 					alignItems: "center",
 					justifyContent: "center",
+				},
+				projectedRow: {
+					alignItems: "center",
+					marginTop: 4,
+					marginBottom: 4,
 				},
 			}),
 		[theme, borderRadius]
@@ -121,6 +132,17 @@ export const NutritionSummary = ({
 						<ThemedText type="subtitleLight">Total</ThemedText>
 					</View>
 				</View>
+				{projectedCalories !== undefined && (
+					<View style={styles.projectedRow}>
+						<ThemedText
+							type="subtitleLight"
+							color={theme.text}
+							style={{ opacity: 0.55 }}
+						>
+							Projected: {projectedCalories} kcal
+						</ThemedText>
+					</View>
+				)}
 				<View style={styles.itemsRow}>
 					<View style={styles.macroItem}>
 						<ThemedText type="subtitleLight">Carbs</ThemedText>
@@ -146,6 +168,17 @@ export const NutritionSummary = ({
 					</View>
 				</View>
 			</View>
+			{macroTargets && (
+				<MacroBalanceCard
+					eaten={{
+						calories: eatenCalories,
+						protein: eatenProtein,
+						carbs: eatenCarbs,
+						fat: eatenFat,
+					}}
+					targets={macroTargets}
+				/>
+			)}
 		</View>
 	)
 }

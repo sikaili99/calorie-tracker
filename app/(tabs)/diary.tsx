@@ -1,14 +1,23 @@
 import { MealsSummary } from "@/components/diaryPage/MealsSummary"
 import { NutritionSummary } from "@/components/diaryPage/NutritionSummary"
+import { InsightsCard } from "@/components/diaryPage/InsightsCard"
+import { StreakBadge } from "@/components/diaryPage/StreakBadge"
 import { Header } from "@/components/Header"
 import { paddingTopForHeader } from "@/constants/Theme"
 import { useNutritionData } from "@/hooks/useNutritionData"
 import useNavigationBarColor from "@/hooks/useNavigationBarColor"
 import { useThemeColor } from "@/hooks/useThemeColor"
+import { useSelectedDate } from "@/hooks/useSelectedDate"
+import { useStreak } from "@/hooks/useStreak"
+import { useInsights } from "@/hooks/useInsights"
+import { useHistoricalData } from "@/hooks/useHistoricalData"
 import React, { useMemo } from "react"
-import { View, StyleSheet, ScrollView } from "react-native"
+import { View, StyleSheet, ScrollView, TouchableOpacity } from "react-native"
 import { useSummary } from "@/hooks/useSummary"
 import { useSettings } from "@/providers/SettingsProvider"
+import Ionicons from "@expo/vector-icons/Ionicons"
+import { formatDate } from "@/utils/Strings"
+import { predictDayTotal } from "@/utils/prediction"
 
 export default function DiaryScreen() {
 	const theme = useThemeColor()
@@ -40,6 +49,14 @@ export default function DiaryScreen() {
 					width: "100%",
 					marginTop: 32,
 				},
+				dateNavContainer: {
+					flexDirection: "row",
+					alignItems: "center",
+					gap: 4,
+				},
+				navButton: {
+					padding: 4,
+				},
 			}),
 		[theme, paddingTopForHeader]
 	)
@@ -50,6 +67,13 @@ export default function DiaryScreen() {
 		targetProteinPercentage,
 		targetFatPercentage,
 	} = useSettings()
+
+	const { selectedDate, isToday, goToNextDay, goToPrevDay } =
+		useSelectedDate()
+
+	const { currentStreak } = useStreak()
+	const { insights } = useInsights()
+	const { mealBreakdown } = useHistoricalData(30)
 
 	const totalCarbs = useMemo(
 		() =>
@@ -94,9 +118,8 @@ export default function DiaryScreen() {
 		[targetCalories, targetCarbsPercentage, targetProteinPercentage]
 	)
 
-	const today = useMemo(() => new Date(), [])
 	const { mealDiaryEntries } = useNutritionData({
-		date: today,
+		date: selectedDate,
 	})
 
 	const { calculateTotal } = useSummary()
@@ -122,16 +145,59 @@ export default function DiaryScreen() {
 		[mealDiaryEntries, calculateTotal]
 	)
 
+	const prediction = useMemo(() => {
+		if (!mealDiaryEntries || !targetCalories || mealBreakdown.length === 0)
+			return null
+		return predictDayTotal(mealDiaryEntries, mealBreakdown, targetCalories)
+	}, [mealDiaryEntries, mealBreakdown, targetCalories])
+
+	const headerTitle = isToday ? "Today" : formatDate(selectedDate)
+
+	const dateNavLeft = (
+		<TouchableOpacity
+			style={styles.navButton}
+			onPress={goToPrevDay}
+			hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+		>
+			<Ionicons
+				name="chevron-back"
+				size={22}
+				color={theme.text}
+			/>
+		</TouchableOpacity>
+	)
+
+	const dateNavRight = (
+		<View style={styles.dateNavContainer}>
+			<TouchableOpacity
+				style={styles.navButton}
+				onPress={goToNextDay}
+				disabled={isToday}
+				hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+			>
+				<Ionicons
+					name="chevron-forward"
+					size={22}
+					color={isToday ? theme.surface : theme.text}
+				/>
+			</TouchableOpacity>
+			<StreakBadge streak={currentStreak} />
+		</View>
+	)
+
 	return (
 		<View style={styles.mainContainer}>
 			<View style={styles.headerRow}>
 				<Header
-					title="Today"
+					title={headerTitle}
 					sticky
 					backgroundColor={theme.background}
+					leftComponent={dateNavLeft}
+					rightComponent={dateNavRight}
 				/>
 			</View>
 			<ScrollView contentContainerStyle={styles.scrollContainer}>
+				<InsightsCard insights={insights} />
 				<View style={styles.nutritionSummary}>
 					{targetCalories && (
 						<NutritionSummary
@@ -143,6 +209,17 @@ export default function DiaryScreen() {
 							totalProtein={totalProtein}
 							eatenFat={totalSummary.fat}
 							totalFat={totalFat}
+							projectedCalories={prediction?.projectedTotal}
+							macroTargets={
+								targetCalories
+									? {
+											calories: targetCalories,
+											protein: totalProtein,
+											carbs: totalCarbs,
+											fat: totalFat,
+										}
+									: undefined
+							}
 						/>
 					)}
 				</View>
