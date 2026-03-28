@@ -36,3 +36,9 @@ yarn-error.*
 *.tsbuildinfo
 
 ios/
+
+# Monorepo
+apps/backend/.env
+apps/backend/dist/
+.nx/cache/
+.nx/workspace-data/

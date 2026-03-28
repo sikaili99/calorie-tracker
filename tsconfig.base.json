@@ -1,0 +1,13 @@
+{
+	"compilerOptions": {
+		"strict": true,
+		"emitDecoratorMetadata": true,
+		"experimentalDecorators": true,
+		"target": "ES2021",
+		"paths": {
+			"@calorie-tracker/shared-types": [
+				"libs/shared-types/src/index.ts"
+			]
+		}
+	}
+}

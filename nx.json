@@ -1,0 +1,26 @@
+{
+	"$schema": "./node_modules/nx/schemas/nx-schema.json",
+	"defaultBase": "main",
+	"targetDefaults": {
+		"build": { "dependsOn": ["^build"], "cache": true },
+		"test": { "cache": true }
+	},
+	"plugins": [
+		{
+			"plugin": "@nx/expo/plugin",
+			"options": {
+				"startTargetName": "start",
+				"androidTargetName": "android",
+				"iosTargetName": "ios"
+			}
+		},
+		{
+			"plugin": "@nx/next/plugin",
+			"options": {
+				"buildTargetName": "build",
+				"devTargetName": "dev",
+				"startTargetName": "start"
+			}
+		}
+	]
+}

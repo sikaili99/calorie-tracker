@@ -1,0 +1,131 @@
+import { Tabs } from "expo-router"
+import Ionicons from "@expo/vector-icons/Ionicons"
+import * as Haptics from "expo-haptics"
+import { useThemeColor } from "@/hooks/useThemeColor"
+import { useMemo } from "react"
+import { StyleSheet } from "react-native"
+
+export default function TabLayout() {
+	const theme = useThemeColor()
+	const handleTabPress = () => {
+		// TODO add a setting to enable/disable haptics
+		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+	}
+
+	const styles = useMemo(
+		() =>
+			StyleSheet.create({
+				label: {
+					fontSize: 12,
+					fontWeight: "bold",
+				},
+			}),
+		[theme]
+	)
+
+	return (
+		<Tabs
+			screenOptions={{
+				tabBarActiveTintColor: theme.primary,
+				tabBarStyle: {
+					backgroundColor: theme.bottomNav,
+				},
+			}}
+		>
+			<Tabs.Screen
+				name="diary"
+				listeners={{
+					tabPress: handleTabPress,
+				}}
+				options={{
+					title: "Diary",
+					headerShown: false,
+					tabBarLabelStyle: styles.label,
+					tabBarIcon: ({ color, focused }) => (
+						<Ionicons
+							name={focused ? "book" : "book-outline"}
+							color={color}
+							size={24}
+						/>
+					),
+				}}
+			/>
+			<Tabs.Screen
+				name="coach"
+				listeners={{
+					tabPress: handleTabPress,
+				}}
+				options={{
+					title: "Coach",
+					headerShown: false,
+					tabBarLabelStyle: styles.label,
+					tabBarIcon: ({ color, focused }) => (
+						<Ionicons
+							name={
+								focused
+									? "chatbubble-ellipses"
+									: "chatbubble-ellipses-outline"
+							}
+							color={color}
+							size={24}
+						/>
+					),
+				}}
+			/>
+			<Tabs.Screen
+				name="achievements"
+				listeners={{
+					tabPress: handleTabPress,
+				}}
+				options={{
+					title: "Achievements",
+					headerShown: false,
+					tabBarLabelStyle: styles.label,
+					tabBarIcon: ({ color, focused }) => (
+						<Ionicons
+							name={focused ? "trophy" : "trophy-outline"}
+							color={color}
+							size={24}
+						/>
+					),
+				}}
+			/>
+			<Tabs.Screen
+				name="history"
+				listeners={{
+					tabPress: handleTabPress,
+				}}
+				options={{
+					title: "History",
+					headerShown: false,
+					tabBarLabelStyle: styles.label,
+					tabBarIcon: ({ color, focused }) => (
+						<Ionicons
+							name={focused ? "calendar" : "calendar-outline"}
+							color={color}
+							size={24}
+						/>
+					),
+				}}
+			/>
+			<Tabs.Screen
+				name="settings"
+				listeners={{
+					tabPress: handleTabPress,
+				}}
+				options={{
+					title: "Settings",
+					headerShown: false,
+					tabBarLabelStyle: styles.label,
+					tabBarIcon: ({ color, focused }) => (
+						<Ionicons
+							name={focused ? "settings" : "settings-outline"}
+							color={color}
+							size={24}
+						/>
+					),
+				}}
+			/>
+		</Tabs>
+	)
+}
