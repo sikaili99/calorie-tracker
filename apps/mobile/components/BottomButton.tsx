@@ -82,10 +82,10 @@ export const BottomButton: React.FC<BottomButtonProps> = ({
 					opacity: 0,
 				},
 				failed: {
-					color: "red",
+					color: theme.error,
 				},
 			}),
-		[theme.secondary, theme.text]
+		[theme.secondary, theme.text, theme.error]
 	)
 
 	const scale = useSharedValue(1)

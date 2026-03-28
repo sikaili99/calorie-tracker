@@ -23,7 +23,7 @@ export default function WelcomeScreen() {
 			width: 96,
 			height: 96,
 			borderRadius: 48,
-			backgroundColor: theme.primary + "20",
+			backgroundColor: theme.primaryAlpha20,
 			alignItems: "center",
 			justifyContent: "center",
 			marginBottom: 8,
@@ -45,7 +45,7 @@ export default function WelcomeScreen() {
 				<Ionicons name="nutrition-outline" size={48} color={theme.primary} />
 			</View>
 			<ThemedText type="title" centered>
-				Simple Calorie Tracker
+				Calorie Tracker
 			</ThemedText>
 			<ThemedText type="subtitleLight" centered>
 				Track your nutrition, reach your goals, and feel your best.

@@ -1,13 +1,14 @@
 import { Header } from "@/components/Header"
-import { View, StyleSheet, Switch } from "react-native"
+import { View, StyleSheet, Switch, ScrollView } from "react-native"
 import { useSettings } from "@/providers/SettingsProvider"
 import { useMemo, useCallback, useState, useEffect } from "react"
 import { useThemeColor } from "@/hooks/useThemeColor"
 import { SettingItem } from "@/components/SettingItem"
 import { CustomTextInput } from "@/components/CustomTextInput"
 import { ThemedText } from "@/components/ThemedText"
-import { borderRadius } from "@/constants/Theme"
+import { borderRadius, spacing } from "@/constants/Theme"
 import { TargetSuggestionBanner } from "@/components/TargetSuggestionBanner"
+import { LoadingState } from "@/components/LoadingState"
 
 export default function Index() {
 	const theme = useThemeColor()
@@ -24,36 +25,64 @@ export default function Index() {
 		updateTargetFatPercentage,
 		updateTargetProteinPercentage,
 		updateNotificationsEnabled,
-		updateReminderTime,
 	} = useSettings()
 
 	const styles = useMemo(
 		() =>
 			StyleSheet.create({
-				mainContainer: {
+				container: {
+					flex: 1,
+					backgroundColor: theme.background,
+				},
+				scroll: {
 					flex: 1,
 				},
-				contentContainer: {
-					flex: 1,
+				scrollContent: {
+					padding: spacing.lg,
+					gap: spacing.xl,
+					paddingBottom: spacing.xxl,
+				},
+				sectionLabel: {
+					marginBottom: spacing.sm,
+					marginLeft: spacing.xs,
+				},
+				card: {
+					borderRadius,
+					overflow: "hidden",
+				},
+				macroBar: {
+					flexDirection: "row",
+					height: 6,
+					borderRadius: 3,
+					overflow: "hidden",
+					marginHorizontal: spacing.lg,
+					marginTop: -spacing.sm,
+					marginBottom: spacing.md,
+				},
+				macroSegment: {
+					height: "100%",
+				},
+				macroFooter: {
+					flexDirection: "row",
+					justifyContent: "space-between",
+					alignItems: "center",
+					paddingHorizontal: spacing.lg,
+					paddingVertical: spacing.md,
+					backgroundColor: theme.surface,
+					borderTopWidth: StyleSheet.hairlineWidth,
+					borderTopColor: theme.onSurface,
 				},
 				notificationRow: {
 					flexDirection: "row",
 					alignItems: "center",
 					justifyContent: "space-between",
-					paddingHorizontal: 16,
+					paddingHorizontal: spacing.lg,
 					paddingVertical: 14,
 					backgroundColor: theme.surface,
-					marginHorizontal: 16,
-					marginTop: 8,
 					borderRadius,
 				},
 				notificationLabel: {
 					flex: 1,
-				},
-				sectionHeader: {
-					marginHorizontal: 16,
-					marginTop: 20,
-					marginBottom: 4,
 				},
 			}),
 		[theme]
@@ -84,13 +113,9 @@ export default function Index() {
 
 	const handleNumericChange = useCallback(
 		(value?: string, setter?: (value: number) => void) => {
-			if (!value || !setter) {
-				return
-			}
+			if (!value || !setter) return
 			const numericValue = Number(value)
-			if (numericValue) {
-				setter(numericValue)
-			}
+			if (numericValue) setter(numericValue)
 		},
 		[]
 	)
@@ -101,24 +126,11 @@ export default function Index() {
 	const [targetCarbsInput, setTargetCarbsInput] = useState<string>()
 
 	useEffect(() => {
-		if (targetCalories) {
-			setTargetCaloriesInput(targetCalories.toString())
-		}
-		if (targetProteinPercentage) {
-			setTargetProteinInput(targetProteinPercentage.toString())
-		}
-		if (targetFatPercentage) {
-			setTargetFatInput(targetFatPercentage.toString())
-		}
-		if (targetCarbsPercentage) {
-			setTargetCarbsInput(targetCarbsPercentage.toString())
-		}
-	}, [
-		targetCalories,
-		targetProteinPercentage,
-		targetFatPercentage,
-		targetCarbsPercentage,
-	])
+		if (targetCalories) setTargetCaloriesInput(targetCalories.toString())
+		if (targetProteinPercentage) setTargetProteinInput(targetProteinPercentage.toString())
+		if (targetFatPercentage) setTargetFatInput(targetFatPercentage.toString())
+		if (targetCarbsPercentage) setTargetCarbsInput(targetCarbsPercentage.toString())
+	}, [targetCalories, targetProteinPercentage, targetFatPercentage, targetCarbsPercentage])
 
 	const totalPercentage = useMemo(
 		() =>
@@ -128,107 +140,145 @@ export default function Index() {
 		[targetCarbsPercentage, targetProteinPercentage, targetFatPercentage]
 	)
 
+	const macroValid = totalPercentage === 100
+
 	return (
-		<View style={styles.mainContainer}>
+		<View style={styles.container}>
 			<Header title="Settings" />
 			<TargetSuggestionBanner />
-			<View style={styles.contentContainer}>
-				{allSettingsLoaded ? (
-					<>
-						<SettingItem
-							title="Target Calories"
-							value={
-								(targetCalories
-									? targetCalories.toString()
-									: "") + " Cal"
-							}
-							onSubmit={() =>
-								handleNumericChange(
-									targetCaloriesInput,
-									updateTargetCalories
-								)
-							}
-						>
-							<CustomTextInput
-								value={targetCaloriesInput}
-								onChangeText={(text) =>
-									setTargetCaloriesInput(text)
-								}
-							/>
-						</SettingItem>
-						<SettingItem
-							title="Target Carbs"
-							value={
-								(targetCarbsPercentage
-									? targetCarbsPercentage.toString()
-									: "") + " %"
-							}
-							onSubmit={() =>
-								handleNumericChange(
-									targetCarbsInput,
-									updateTargetCarbsPercentage
-								)
-							}
-						>
-							<CustomTextInput
-								value={targetCarbsInput}
-								onChangeText={(text) =>
-									setTargetCarbsInput(text)
-								}
-							/>
-						</SettingItem>
-						<SettingItem
-							title="Target Protein"
-							value={
-								(targetProteinPercentage
-									? targetProteinPercentage.toString()
-									: "") + " %"
-							}
-							onSubmit={() =>
-								handleNumericChange(
-									targetProteinInput,
-									updateTargetProteinPercentage
-								)
-							}
-						>
-							<CustomTextInput
-								value={targetProteinInput}
-								onChangeText={(text) =>
-									setTargetProteinInput(text)
-								}
-							/>
-						</SettingItem>
-						<SettingItem
-							title="Target Fat"
-							value={
-								(targetFatPercentage
-									? targetFatPercentage.toString()
-									: "") + " %"
-							}
-							onSubmit={() =>
-								handleNumericChange(
-									targetFatInput,
-									updateTargetFatPercentage
-								)
-							}
-						>
-							<CustomTextInput
-								value={targetFatInput}
-								onChangeText={(text) => setTargetFatInput(text)}
-							/>
-						</SettingItem>
-						<ThemedText
-							style={{ margin: 16 }}
-							color={totalPercentage === 100 ? theme.text : "red"}
-							type="subtitleBold"
-						>
-							Total percentage adds up to {totalPercentage}%
+			{allSettingsLoaded ? (
+				<ScrollView
+					style={styles.scroll}
+					contentContainerStyle={styles.scrollContent}
+					showsVerticalScrollIndicator={false}
+				>
+					{/* Calories */}
+					<View>
+						<ThemedText type="subtitleBold" style={styles.sectionLabel}>
+							DAILY TARGET
 						</ThemedText>
-						<ThemedText
-							type="subtitleBold"
-							style={styles.sectionHeader}
-						>
-							Reminders
+						<View style={styles.card}>
+							<SettingItem
+								title="Calorie Target"
+								value={`${targetCalories ?? 0} kcal`}
+								iconName="flame-outline"
+								isFirst
+								isLast
+								onSubmit={() =>
+									handleNumericChange(targetCaloriesInput, updateTargetCalories)
+								}
+							>
+								<CustomTextInput
+									value={targetCaloriesInput}
+									onChangeText={setTargetCaloriesInput}
+								/>
+							</SettingItem>
+						</View>
+					</View>
+
+					{/* Macros */}
+					<View>
+						<ThemedText type="subtitleBold" style={styles.sectionLabel}>
+							MACROS
+						</ThemedText>
+						<View style={styles.card}>
+							<SettingItem
+								title="Carbohydrates"
+								value={`${targetCarbsPercentage ?? 0}%`}
+								iconName="leaf-outline"
+								isFirst
+								onSubmit={() =>
+									handleNumericChange(targetCarbsInput, updateTargetCarbsPercentage)
+								}
+							>
+								<CustomTextInput
+									value={targetCarbsInput}
+									onChangeText={setTargetCarbsInput}
+								/>
+							</SettingItem>
+							<SettingItem
+								title="Protein"
+								value={`${targetProteinPercentage ?? 0}%`}
+								iconName="barbell-outline"
+								onSubmit={() =>
+									handleNumericChange(targetProteinInput, updateTargetProteinPercentage)
+								}
+							>
+								<CustomTextInput
+									value={targetProteinInput}
+									onChangeText={setTargetProteinInput}
+								/>
+							</SettingItem>
+							<SettingItem
+								title="Fat"
+								value={`${targetFatPercentage ?? 0}%`}
+								iconName="water-outline"
+								isLast
+								onSubmit={() =>
+									handleNumericChange(targetFatInput, updateTargetFatPercentage)
+								}
+							>
+								<CustomTextInput
+									value={targetFatInput}
+									onChangeText={setTargetFatInput}
+								/>
+							</SettingItem>
+						</View>
+
+						{/* Macro bar */}
+						<View style={styles.macroBar}>
+							<View
+								style={[
+									styles.macroSegment,
+									{ flex: targetCarbsPercentage ?? 0, backgroundColor: "#5BBEF9" },
+								]}
+							/>
+							<View
+								style={[
+									styles.macroSegment,
+									{ flex: targetProteinPercentage ?? 0, backgroundColor: "#22C55E" },
+								]}
+							/>
+							<View
+								style={[
+									styles.macroSegment,
+									{ flex: targetFatPercentage ?? 0, backgroundColor: "#F59E0B" },
+								]}
+							/>
+							{totalPercentage < 100 && (
+								<View
+									style={[
+										styles.macroSegment,
+										{ flex: 100 - totalPercentage, backgroundColor: theme.onSurface },
+									]}
+								/>
+							)}
+						</View>
+
+						<View style={styles.macroFooter}>
+							<ThemedText type="subtitleLight">
+								<ThemedText type="subtitleBold" color="#5BBEF9">C </ThemedText>
+								<ThemedText type="subtitleLight" color="#5BBEF9">{targetCarbsPercentage ?? 0}%</ThemedText>
+								{"   "}
+								<ThemedText type="subtitleBold" color="#22C55E">P </ThemedText>
+								<ThemedText type="subtitleLight" color="#22C55E">{targetProteinPercentage ?? 0}%</ThemedText>
+								{"   "}
+								<ThemedText type="subtitleBold" color="#F59E0B">F </ThemedText>
+								<ThemedText type="subtitleLight" color="#F59E0B">{targetFatPercentage ?? 0}%</ThemedText>
+							</ThemedText>
+							<ThemedText
+								type="subtitleBold"
+								color={macroValid ? theme.success : theme.error}
+							>
+								{macroValid ? "✓ 100%" : `${totalPercentage}% / 100%`}
+							</ThemedText>
+						</View>
+					</View>
+
+					{/* Reminders */}
+					<View>
+						<ThemedText type="subtitleBold" style={styles.sectionLabel}>
+							REMINDERS
 						</ThemedText>
 						<View style={styles.notificationRow}>
 							<View style={styles.notificationLabel}>
@@ -236,8 +286,7 @@ export default function Index() {
 									Daily Reminder
 								</ThemedText>
 								<ThemedText type="subtitleLight">
-									Remind me to log my meals at{" "}
-									{reminderTimeLabel}
+									Remind me to log my meals at {reminderTimeLabel}
 								</ThemedText>
 							</View>
 							<Switch
@@ -250,9 +299,11 @@ export default function Index() {
 								thumbColor={theme.surface}
 							/>
 						</View>
-					</>
-				) : null}
-			</View>
+					</View>
+				</ScrollView>
+			) : (
+				<LoadingState message="Loading settings…" />
+			)}
 		</View>
 	)
 }

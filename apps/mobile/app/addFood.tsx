@@ -278,7 +278,7 @@ export default function AddFood() {
 
 	return (
 		<DismissKeyboard>
-			<>
+			<View style={{ flex: 1 }}>
 				<CustomEntryModal
 					modalVisible={modalVisible}
 					handleDismiss={handleDismiss}
@@ -477,7 +477,7 @@ export default function AddFood() {
 					</GestureHandlerRootView>
 					<BottomButton text="Done" onPress={handleDonePress} />
 				</View>
-			</>
+			</View>
 		</DismissKeyboard>
 	)
 }

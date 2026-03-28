@@ -15,6 +15,11 @@ export const Colors = {
 		primary: "#5BBEF9",
 		secondary: "#0889D6",
 		bottomNav: "#FFFEFE",
+		error: "#EF4444",
+		errorSurface: "#FEF2F2",
+		success: "#22C55E",
+		primaryAlpha20: "#5BBEF920",
+		primaryAlpha33: "#5BBEF933",
 	},
 	dark: {
 		text: "#E1E3E1",
@@ -25,10 +30,33 @@ export const Colors = {
 		primary: "#5BBFF8",
 		secondary: "#0989D8",
 		bottomNav: "#202B38",
+		error: "#F87171",
+		errorSurface: "#3B1515",
+		success: "#4ADE80",
+		primaryAlpha20: "#5BBFF820",
+		primaryAlpha33: "#5BBFF833",
 	},
 }
 
 export const borderRadius = 8
+
+export const spacing = {
+	xs: 4,
+	sm: 8,
+	md: 12,
+	lg: 16,
+	xl: 24,
+	xxl: 32,
+} as const
+
+export const typography = {
+	xs: 11,
+	sm: 12,
+	md: 15,
+	base: 16,
+	lg: 18,
+	xl: 20,
+} as const
 
 export const paddingTopForHeader = 44
 

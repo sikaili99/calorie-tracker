@@ -29,7 +29,7 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
 					backgroundColor: isUser ? theme.primary : theme.surface,
 				},
 				text: {
-					color: isUser ? "#fff" : theme.text,
+					color: isUser ? theme.background : theme.text,
 					fontSize: 15,
 					lineHeight: 22,
 				},

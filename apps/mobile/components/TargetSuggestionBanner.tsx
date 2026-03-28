@@ -16,7 +16,7 @@ export const TargetSuggestionBanner = () => {
 		() =>
 			StyleSheet.create({
 				banner: {
-					backgroundColor: theme.primary + "20",
+					backgroundColor: theme.primaryAlpha20,
 					borderLeftWidth: 4,
 					borderLeftColor: theme.primary,
 					borderRadius,

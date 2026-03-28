@@ -90,12 +90,12 @@ export const ChatInput = ({ onSend, isLoading }: ChatInputProps) => {
 				disabled={!canSend}
 			>
 				{isLoading ? (
-					<ActivityIndicator color="#fff" size="small" />
+					<ActivityIndicator color={theme.background} size="small" />
 				) : (
 					<Ionicons
 						name="send"
 						size={18}
-						color={canSend ? "#fff" : theme.text}
+						color={canSend ? theme.background : theme.text}
 					/>
 				)}
 			</TouchableOpacity>

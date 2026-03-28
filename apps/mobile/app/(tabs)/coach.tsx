@@ -5,14 +5,15 @@ import {
 	StyleSheet,
 	KeyboardAvoidingView,
 	Platform,
-	TouchableOpacity,
+	ActivityIndicator,
 } from "react-native"
-import { router } from "expo-router"
 import { Header } from "@/components/Header"
 import { ThemedText } from "@/components/ThemedText"
 import { MessageBubble } from "@/components/coachPage/MessageBubble"
 import { ChatInput } from "@/components/coachPage/ChatInput"
 import { CustomPressable } from "@/components/CustomPressable"
+import { PremiumGate } from "@/components/PremiumGate"
+import { EmptyState } from "@/components/EmptyState"
 import { useThemeColor } from "@/hooks/useThemeColor"
 import { useCoach } from "@/hooks/useCoach"
 import { useNutritionData } from "@/hooks/useNutritionData"
@@ -45,24 +46,8 @@ export default function CoachScreen() {
 					backgroundColor: theme.background,
 				},
 				flex: { flex: 1 },
-				emptyContainer: {
-					flex: 1,
-					alignItems: "center",
-					justifyContent: "center",
-					padding: 32,
-					gap: 12,
-				},
-				emptyIcon: {
-					width: 64,
-					height: 64,
-					borderRadius: 32,
-					backgroundColor: theme.surface,
-					alignItems: "center",
-					justifyContent: "center",
-					marginBottom: 8,
-				},
 				errorBanner: {
-					backgroundColor: "#FEF2F2",
+					backgroundColor: theme.errorSurface,
 					borderRadius,
 					margin: 16,
 					padding: 12,
@@ -79,13 +64,11 @@ export default function CoachScreen() {
 				statItem: {
 					alignItems: "center",
 				},
-				unlockButton: {
-					backgroundColor: theme.primary,
-					paddingVertical: 14,
-					paddingHorizontal: 28,
-					borderRadius,
+				typingRow: {
+					flexDirection: "row",
 					alignItems: "center",
-					marginTop: 8,
+					paddingHorizontal: 16,
+					paddingVertical: 8,
 				},
 			}),
 		[theme]
@@ -95,40 +78,23 @@ export default function CoachScreen() {
 		return (
 			<View style={styles.container}>
 				<Header title="AI Coach" />
-				<View style={styles.emptyContainer}>
-					<Ionicons
-						name="lock-closed-outline"
-						size={48}
-						color={theme.primary}
-					/>
-					<ThemedText type="defaultSemiBold" centered>
-						Premium Feature
-					</ThemedText>
-					<ThemedText type="subtitleLight" centered>
-						Unlock AI Coach to get personalised nutrition guidance.
-					</ThemedText>
-					<CustomPressable
-						borderRadius={borderRadius}
-						style={styles.unlockButton}
-						onPress={() => router.push("/paywall")}
-					>
-						<ThemedText type="defaultSemiBold" color={theme.background}>
-							Unlock Premium
-						</ThemedText>
-					</CustomPressable>
-				</View>
+				<PremiumGate
+					title="Premium Feature"
+					description="Unlock AI Coach to get personalised nutrition guidance."
+				/>
 			</View>
 		)
 	}
 
 	const headerRight =
 		messages.length > 0 ? (
-			<TouchableOpacity
+			<CustomPressable
+				borderRadius={24}
 				onPress={clearHistory}
 				hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
 			>
 				<Ionicons name="trash-outline" size={22} color={theme.text} />
-			</TouchableOpacity>
+			</CustomPressable>
 		) : undefined
 
 	return (
@@ -165,22 +131,11 @@ export default function CoachScreen() {
 
 			{/* Message list or empty state */}
 			{messages.length === 0 ? (
-				<View style={styles.emptyContainer}>
-					<View style={styles.emptyIcon}>
-						<Ionicons
-							name="chatbubble-ellipses-outline"
-							size={32}
-							color={theme.primary}
-						/>
-					</View>
-					<ThemedText type="defaultSemiBold" centered>
-						Your AI Nutrition Coach
-					</ThemedText>
-					<ThemedText type="subtitleLight" centered>
-						Ask me anything about your nutrition, what to eat next,
-						or how to hit your goals.
-					</ThemedText>
-				</View>
+				<EmptyState
+					iconName="chatbubble-ellipses-outline"
+					title="Your AI Nutrition Coach"
+					subtitle="Ask me anything about your nutrition, what to eat next, or how to hit your goals."
+				/>
 			) : (
 				<FlatList
 					ref={flatListRef}
@@ -192,12 +147,29 @@ export default function CoachScreen() {
 					onContentSizeChange={() =>
 						flatListRef.current?.scrollToEnd({ animated: true })
 					}
+					ListFooterComponent={
+						isLoading ? (
+							<View style={styles.typingRow}>
+								<ThemedText
+									type="subtitleLight"
+									color={theme.primary}
+								>
+									Coach is typing…
+								</ThemedText>
+								<ActivityIndicator
+									size="small"
+									color={theme.primary}
+									style={{ marginLeft: 8 }}
+								/>
+							</View>
+						) : null
+					}
 				/>
 			)}
 
 			{error && (
 				<View style={styles.errorBanner}>
-					<ThemedText type="subtitleLight" color="#EF4444">
+					<ThemedText type="subtitleLight" color={theme.error}>
 						{error}
 					</ThemedText>
 				</View>

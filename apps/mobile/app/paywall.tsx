@@ -1,9 +1,10 @@
-import React from "react"
-import { View, StyleSheet, TouchableOpacity, ScrollView } from "react-native"
-import { router } from "expo-router"
+import React, { useState } from "react"
+import { View, StyleSheet, ScrollView } from "react-native"
+import { router, useLocalSearchParams } from "expo-router"
 import { useThemeColor } from "@/hooks/useThemeColor"
 import { ThemedText } from "@/components/ThemedText"
 import { CustomPressable } from "@/components/CustomPressable"
+import { PrimaryButton } from "@/components/PrimaryButton"
 import { useSettings } from "@/providers/SettingsProvider"
 import Ionicons from "@expo/vector-icons/Ionicons"
 import { borderRadius } from "@/constants/Theme"
@@ -22,6 +23,8 @@ const PRICING = [
 export default function PaywallScreen() {
 	const theme = useThemeColor()
 	const { updateIsPremium } = useSettings()
+	const { featureName } = useLocalSearchParams<{ featureName?: string }>()
+	const [isStartingTrial, setIsStartingTrial] = useState(false)
 
 	const styles = StyleSheet.create({
 		container: {
@@ -55,17 +58,10 @@ export default function PaywallScreen() {
 			alignItems: "center",
 		},
 		badge: {
-			backgroundColor: theme.primary + "20",
+			backgroundColor: theme.primaryAlpha20,
 			borderRadius: 8,
 			paddingHorizontal: 8,
 			paddingVertical: 2,
-		},
-		primaryButton: {
-			backgroundColor: theme.primary,
-			paddingVertical: 16,
-			borderRadius,
-			alignItems: "center",
-			marginTop: 8,
 		},
 		restoreButton: {
 			alignItems: "center",
@@ -74,26 +70,35 @@ export default function PaywallScreen() {
 	})
 
 	const handleStartTrial = async () => {
-		await updateIsPremium(true)
-		router.back()
+		if (isStartingTrial) return
+		setIsStartingTrial(true)
+		try {
+			await updateIsPremium(true)
+			router.back()
+		} finally {
+			setIsStartingTrial(false)
+		}
 	}
 
 	return (
 		<View style={styles.container}>
-			<TouchableOpacity
+			<CustomPressable
+				borderRadius={20}
 				style={styles.closeButton}
 				onPress={() => router.back()}
 				hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
 			>
 				<Ionicons name="close" size={24} color={theme.text} />
-			</TouchableOpacity>
+			</CustomPressable>
 
 			<ScrollView contentContainerStyle={styles.inner}>
 				<ThemedText type="title" centered>
 					Go Premium
 				</ThemedText>
 				<ThemedText type="subtitleLight" centered>
-					Unlock the full power of your nutrition coach
+					{featureName
+						? `Unlock ${featureName} and other premium features`
+						: "Unlock the full power of your nutrition coach"}
 				</ThemedText>
 
 				<View style={{ gap: 12, marginVertical: 8 }}>
@@ -136,21 +141,20 @@ export default function PaywallScreen() {
 					))}
 				</View>
 
+				<PrimaryButton
+					label="Start Free Trial"
+					onPress={handleStartTrial}
+					isLoading={isStartingTrial}
+				/>
+
 				<CustomPressable
 					borderRadius={borderRadius}
-					style={styles.primaryButton}
-					onPress={handleStartTrial}
+					style={styles.restoreButton}
 				>
-					<ThemedText type="defaultSemiBold" color={theme.background}>
-						Start Free Trial
-					</ThemedText>
-				</CustomPressable>
-
-				<TouchableOpacity style={styles.restoreButton}>
 					<ThemedText type="subtitleLight" color={theme.primary}>
 						Restore Purchase
 					</ThemedText>
-				</TouchableOpacity>
+				</CustomPressable>
 
 				<ThemedText
 					type="subtitleLight"

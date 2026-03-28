@@ -97,7 +97,7 @@ export default function GoalWizardScreen() {
 			gap: 2,
 		},
 		optionButtonSelected: {
-			backgroundColor: theme.primary + "20",
+			backgroundColor: theme.primaryAlpha20,
 			borderLeftWidth: 3,
 			borderLeftColor: theme.primary,
 		},
@@ -107,6 +107,20 @@ export default function GoalWizardScreen() {
 			marginTop: 8,
 		},
 		flex: { flex: 1 },
+		progressContainer: {
+			flexDirection: "row",
+			gap: 6,
+			marginBottom: 4,
+		},
+		progressSegment: {
+			height: 4,
+			borderRadius: 2,
+			flex: 1,
+			backgroundColor: theme.onSurface,
+		},
+		progressSegmentActive: {
+			backgroundColor: theme.primary,
+		},
 	})
 
 	const handleSkip = async () => {
@@ -155,6 +169,17 @@ export default function GoalWizardScreen() {
 			behavior={Platform.OS === "ios" ? "padding" : "height"}
 		>
 			<ScrollView contentContainerStyle={styles.inner}>
+				<View style={styles.progressContainer}>
+					{[1, 2, 3, 4].map((s) => (
+						<View
+							key={s}
+							style={[
+								styles.progressSegment,
+								s <= step && styles.progressSegmentActive,
+							]}
+						/>
+					))}
+				</View>
 				<View style={styles.header}>
 					<ThemedText type="subtitleLight">Step {step} of 4</ThemedText>
 					<TouchableOpacity onPress={handleSkip} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>

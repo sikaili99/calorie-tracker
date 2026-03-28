@@ -7,8 +7,89 @@ import { useThemeColor } from "@/hooks/useThemeColor"
 import { borderRadius } from "@/constants/Theme"
 import { UserStats } from "@/interfaces/Achievements"
 import Ionicons from "@expo/vector-icons/Ionicons"
-import React, { useMemo, useState, useEffect } from "react"
+import React, { useMemo, useState, useEffect, useCallback } from "react"
 import { View, StyleSheet, FlatList } from "react-native"
+import Animated, {
+	useSharedValue,
+	useAnimatedStyle,
+	withSpring,
+	withTiming,
+} from "react-native-reanimated"
+
+type Achievement = ReturnType<typeof useAchievements>["achievements"][number]
+
+const AchievementCard = ({
+	item,
+	styles,
+}: {
+	item: Achievement
+	styles: ReturnType<typeof StyleSheet.create>
+}) => {
+	const theme = useThemeColor()
+	const scale = useSharedValue(item.isUnlocked ? 1 : 1)
+
+	useEffect(() => {
+		if (item.isUnlocked) {
+			scale.value = withSpring(1.08, { damping: 6 }, () => {
+				scale.value = withTiming(1)
+			})
+		}
+	}, [item.isUnlocked])
+
+	const animatedStyle = useAnimatedStyle(() => ({
+		transform: [{ scale: scale.value }],
+	}))
+
+	return (
+		<Animated.View
+			style={[
+				animatedStyle,
+				styles.card,
+				!item.isUnlocked && styles.cardLocked,
+			]}
+		>
+			<View
+				style={[
+					styles.iconContainer,
+					item.isUnlocked && styles.iconContainerUnlocked,
+				]}
+			>
+				<Ionicons
+					name={item.icon as any}
+					size={24}
+					color={item.isUnlocked ? theme.primary : theme.text}
+				/>
+			</View>
+			<View style={styles.textContainer}>
+				<ThemedText type="defaultSemiBold">{item.title}</ThemedText>
+				{item.isUnlocked ? (
+					<ThemedText type="subtitleLight">{item.description}</ThemedText>
+				) : (
+					<ThemedText type="subtitleLight" color={theme.primary}>
+						How to unlock: {item.description}
+					</ThemedText>
+				)}
+				{item.isUnlocked && item.unlockedAt && (
+					<ThemedText
+						type="subtitleLight"
+						style={styles.unlockedDate}
+						color={theme.primary}
+					>
+						Unlocked{" "}
+						{new Date(item.unlockedAt).toLocaleDateString()}
+					</ThemedText>
+				)}
+			</View>
+			{item.isUnlocked && (
+				<Ionicons
+					name="checkmark-circle"
+					size={22}
+					color={theme.primary}
+				/>
+			)}
+		</Animated.View>
+	)
+}
 
 export default function AchievementsScreen() {
 	const theme = useThemeColor()
@@ -66,7 +147,7 @@ export default function AchievementsScreen() {
 					justifyContent: "center",
 				},
 				iconContainerUnlocked: {
-					backgroundColor: theme.primary + "33",
+					backgroundColor: theme.primaryAlpha33,
 				},
 				textContainer: {
 					flex: 1,
@@ -78,6 +159,13 @@ export default function AchievementsScreen() {
 		[theme]
 	)
 
+	const renderItem = useCallback(
+		({ item }: { item: Achievement }) => (
+			<AchievementCard item={item} styles={styles} />
+		),
+		[styles]
+	)
+
 	return (
 		<View style={styles.container}>
 			<Header title="Achievements" />
@@ -85,59 +173,7 @@ export default function AchievementsScreen() {
 				data={achievements}
 				keyExtractor={(item) => item.id}
 				contentContainerStyle={styles.list}
-				renderItem={({ item }) => (
-					<View
-						style={[
-							styles.card,
-							!item.isUnlocked && styles.cardLocked,
-						]}
-					>
-						<View
-							style={[
-								styles.iconContainer,
-								item.isUnlocked &&
-									styles.iconContainerUnlocked,
-							]}
-						>
-							<Ionicons
-								name={item.icon as any}
-								size={24}
-								color={
-									item.isUnlocked
-										? theme.primary
-										: theme.text
-								}
-							/>
-						</View>
-						<View style={styles.textContainer}>
-							<ThemedText type="defaultSemiBold">
-								{item.title}
-							</ThemedText>
-							<ThemedText type="subtitleLight">
-								{item.description}
-							</ThemedText>
-							{item.isUnlocked && item.unlockedAt && (
-								<ThemedText
-									type="subtitleLight"
-									style={styles.unlockedDate}
-									color={theme.primary}
-								>
-									Unlocked{" "}
-									{new Date(
-										item.unlockedAt
-									).toLocaleDateString()}
-								</ThemedText>
-							)}
-						</View>
-						{item.isUnlocked && (
-							<Ionicons
-								name="checkmark-circle"
-								size={22}
-								color={theme.primary}
-							/>
-						)}
-					</View>
-				)}
+				renderItem={renderItem}
 			/>
 		</View>
 	)
