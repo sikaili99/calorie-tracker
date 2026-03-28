@@ -16,7 +16,7 @@ export default function HeroSection() {
 					<span className="text-primary">Understand your body.</span>
 				</h1>
 				<p className="text-gray-400 text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-					Simple Calorie Tracker gives you a daily diary, AI coaching, photo
+					Calorie Tracker gives you a daily diary, AI coaching, photo
 					food logging, and a massive database — all in one free, open-source
 					React Native app.
 				</p>
