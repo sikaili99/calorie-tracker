@@ -40,5 +40,6 @@ ios/
 # Monorepo
 apps/backend/.env
 apps/backend/dist/
+apps/web/.next/
 .nx/cache/
 .nx/workspace-data/
