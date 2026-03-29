@@ -40,7 +40,9 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({
 
 	const [_googleRequest, googleResponse, googlePromptAsync] =
 		Google.useAuthRequest({
-			clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+			iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "",
+			androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? "",
+			webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? "",
 		})
 
 	// Resolve the google sign-in promise after the auth session response
