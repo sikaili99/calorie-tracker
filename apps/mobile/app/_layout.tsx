@@ -14,6 +14,7 @@ import * as SystemUI from "expo-system-ui"
 import { DiaryProvider } from "@/providers/DatabaseProvider"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { SettingsProvider, useSettings } from "@/providers/SettingsProvider"
+import { AuthProvider } from "@/providers/AuthProvider"
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync()
@@ -111,6 +112,7 @@ export default function RootLayout() {
 			value={colorScheme === "dark" ? CustomDarkTheme : CustomLightTheme}
 		>
 			<SettingsProvider>
+				<AuthProvider>
 				<GestureHandlerRootView>
 					<DiaryProvider>
 						<SelectionProvider>
@@ -125,6 +127,7 @@ export default function RootLayout() {
 						</SelectionProvider>
 					</DiaryProvider>
 				</GestureHandlerRootView>
+				</AuthProvider>
 			</SettingsProvider>
 		</ThemeProvider>
 	)

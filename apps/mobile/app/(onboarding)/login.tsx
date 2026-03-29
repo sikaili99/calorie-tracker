@@ -11,17 +11,20 @@ import { router } from "expo-router"
 import { useThemeColor } from "@/hooks/useThemeColor"
 import { ThemedText } from "@/components/ThemedText"
 import { CustomPressable } from "@/components/CustomPressable"
-import { BackendAPI } from "@/api/BackendAPI"
+import { useAuth } from "@/providers/AuthProvider"
 import { useSettings } from "@/providers/SettingsProvider"
 import { borderRadius } from "@/constants/Theme"
+import Ionicons from "@expo/vector-icons/Ionicons"
 
 export default function LoginScreen() {
 	const theme = useThemeColor()
+	const { login, loginWithGoogle } = useAuth()
 	const { updateOnboardingComplete } = useSettings()
 	const [email, setEmail] = useState("")
 	const [password, setPassword] = useState("")
 	const [error, setError] = useState<string | null>(null)
 	const [isLoading, setIsLoading] = useState(false)
+	const [isGoogleLoading, setIsGoogleLoading] = useState(false)
 
 	const styles = StyleSheet.create({
 		container: {
@@ -49,15 +52,36 @@ export default function LoginScreen() {
 			alignItems: "center",
 			marginTop: 8,
 		},
-		secondaryButton: {
+		googleButton: {
 			backgroundColor: theme.surface,
 			paddingVertical: 16,
 			borderRadius,
 			alignItems: "center",
+			flexDirection: "row",
+			justifyContent: "center",
+			gap: 10,
+		},
+		dividerRow: {
+			flexDirection: "row",
+			alignItems: "center",
+			gap: 12,
+			marginVertical: 4,
+		},
+		dividerLine: {
+			flex: 1,
+			height: StyleSheet.hairlineWidth,
+			backgroundColor: theme.onSurface,
 		},
 		linkButton: {
 			paddingVertical: 12,
 			alignItems: "center",
+		},
+		guestButton: {
+			paddingVertical: 16,
+			borderRadius,
+			alignItems: "center",
+			borderWidth: StyleSheet.hairlineWidth,
+			borderColor: theme.onSurface,
 		},
 	})
 
@@ -69,12 +93,27 @@ export default function LoginScreen() {
 		setIsLoading(true)
 		setError(null)
 		try {
-			await BackendAPI.login(email.trim(), password)
+			await login(email.trim(), password)
 			router.replace("/(tabs)")
-		} catch {
-			setError("Coming soon! Use 'Continue as Guest' to enter the app.")
+		} catch (e: any) {
+			setError(e?.response?.data?.message ?? "Invalid email or password.")
 		} finally {
 			setIsLoading(false)
+		}
+	}
+
+	const handleGoogleLogin = async () => {
+		setIsGoogleLoading(true)
+		setError(null)
+		try {
+			await loginWithGoogle()
+			router.replace("/(tabs)")
+		} catch (e: any) {
+			if (e?.message !== "Dismissed") {
+				setError("Google sign-in failed. Please try again.")
+			}
+		} finally {
+			setIsGoogleLoading(false)
 		}
 	}
 
@@ -113,7 +152,7 @@ export default function LoginScreen() {
 				/>
 
 				{error && (
-					<ThemedText type="subtitleLight" color="#F59E0B">
+					<ThemedText type="subtitleLight" color={theme.error}>
 						{error}
 					</ThemedText>
 				)}
@@ -129,17 +168,31 @@ export default function LoginScreen() {
 					</ThemedText>
 				</CustomPressable>
 
-				{error && (
-					<CustomPressable
-						borderRadius={borderRadius}
-						style={styles.secondaryButton}
-						onPress={handleContinueAsGuest}
-					>
-						<ThemedText type="defaultSemiBold">
-							Continue as Guest
-						</ThemedText>
-					</CustomPressable>
-				)}
+				<View style={styles.dividerRow}>
+					<View style={styles.dividerLine} />
+					<ThemedText type="subtitleLight">or</ThemedText>
+					<View style={styles.dividerLine} />
+				</View>
+
+				<CustomPressable
+					borderRadius={borderRadius}
+					style={styles.googleButton}
+					onPress={handleGoogleLogin}
+					disabled={isGoogleLoading}
+				>
+					<Ionicons name="logo-google" size={20} color={theme.text} />
+					<ThemedText type="defaultSemiBold">
+						{isGoogleLoading ? "Signing in…" : "Continue with Google"}
+					</ThemedText>
+				</CustomPressable>
+
+				<CustomPressable
+					borderRadius={borderRadius}
+					style={styles.guestButton}
+					onPress={handleContinueAsGuest}
+				>
+					<ThemedText type="default">Continue as Guest</ThemedText>
+				</CustomPressable>
 
 				<CustomPressable
 					borderRadius={borderRadius}

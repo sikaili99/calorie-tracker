@@ -2,6 +2,8 @@ import axios from "axios"
 import { BACKEND_BASE_URL } from "@/constants/BackendConfig"
 import { Food } from "@/hooks/useDatabase"
 import { DailySummary } from "@/hooks/useHistoricalData"
+import { tokenStorage } from "@/utils/tokenStorage"
+import type { AuthResponse, AuthUser } from "@calorie-tracker/shared-types"
 
 // ─── Shared types ────────────────────────────────────────────────────────────
 
@@ -90,6 +92,58 @@ const client = axios.create({
 	headers: { "Content-Type": "application/json" },
 })
 
+// Attach access token to every request
+client.interceptors.request.use(async (config) => {
+	const token = await tokenStorage.getAccessToken()
+	if (token) {
+		config.headers.Authorization = `Bearer ${token}`
+	}
+	return config
+})
+
+// On 401: attempt silent token refresh, then retry once
+let isRefreshing = false
+let refreshQueue: Array<(token: string) => void> = []
+
+client.interceptors.response.use(
+	(response) => response,
+	async (error) => {
+		const original = error.config
+		if (error.response?.status !== 401 || original._retry) {
+			return Promise.reject(error)
+		}
+		original._retry = true
+
+		if (isRefreshing) {
+			return new Promise((resolve) => {
+				refreshQueue.push((token: string) => {
+					original.headers.Authorization = `Bearer ${token}`
+					resolve(client(original))
+				})
+			})
+		}
+
+		isRefreshing = true
+		try {
+			const refreshToken = await tokenStorage.getRefreshToken()
+			if (!refreshToken) throw new Error("No refresh token")
+			const { accessToken, refreshToken: newRefresh } =
+				await BackendAPI.refreshTokens(refreshToken)
+			await tokenStorage.saveTokens(accessToken, newRefresh)
+			refreshQueue.forEach((cb) => cb(accessToken))
+			refreshQueue = []
+			original.headers.Authorization = `Bearer ${accessToken}`
+			return client(original)
+		} catch (refreshError) {
+			await tokenStorage.clearTokens()
+			refreshQueue = []
+			return Promise.reject(refreshError)
+		} finally {
+			isRefreshing = false
+		}
+	}
+)
+
 export const BackendAPI = {
 	async coachMessage(
 		messages: ChatMessage[],
@@ -141,14 +195,51 @@ export const BackendAPI = {
 	},
 
 	async register(
-		_name: string,
-		_email: string,
-		_password: string
-	): Promise<void> {
-		throw new Error("Auth coming soon")
+		firstName: string,
+		lastName: string,
+		email: string,
+		password: string
+	): Promise<AuthResponse> {
+		const response = await client.post<AuthResponse>("/auth/register", {
+			firstName,
+			lastName,
+			email,
+			password,
+		})
+		return response.data
 	},
 
-	async login(_email: string, _password: string): Promise<void> {
-		throw new Error("Auth coming soon")
+	async login(email: string, password: string): Promise<AuthResponse> {
+		const response = await client.post<AuthResponse>("/auth/login", {
+			email,
+			password,
+		})
+		return response.data
+	},
+
+	async googleAuth(idToken: string): Promise<AuthResponse> {
+		const response = await client.post<AuthResponse>("/auth/google", {
+			idToken,
+		})
+		return response.data
+	},
+
+	async refreshTokens(refreshToken: string): Promise<AuthResponse> {
+		// Use a raw axios call to avoid interceptor loop
+		const response = await axios.post<AuthResponse>(
+			`${BACKEND_BASE_URL}/auth/refresh`,
+			{ refreshToken },
+			{ headers: { "Content-Type": "application/json" } }
+		)
+		return response.data
+	},
+
+	async getMe(): Promise<AuthUser> {
+		const response = await client.get<AuthUser>("/auth/me")
+		return response.data
+	},
+
+	async logout(refreshToken: string): Promise<void> {
+		await client.post("/auth/logout", { refreshToken })
 	},
 }

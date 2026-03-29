@@ -8,10 +8,22 @@ datasource db {
 }
 
 model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  firstName     String
+  lastName      String
+  password      String?
+  googleId      String?        @unique
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
   id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  password  String
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }

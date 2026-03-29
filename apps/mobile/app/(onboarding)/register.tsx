@@ -11,12 +11,14 @@ import { router } from "expo-router"
 import { useThemeColor } from "@/hooks/useThemeColor"
 import { ThemedText } from "@/components/ThemedText"
 import { CustomPressable } from "@/components/CustomPressable"
-import { BackendAPI } from "@/api/BackendAPI"
+import { useAuth } from "@/providers/AuthProvider"
 import { borderRadius } from "@/constants/Theme"
 
 export default function RegisterScreen() {
 	const theme = useThemeColor()
-	const [name, setName] = useState("")
+	const { register } = useAuth()
+	const [firstName, setFirstName] = useState("")
+	const [lastName, setLastName] = useState("")
 	const [email, setEmail] = useState("")
 	const [password, setPassword] = useState("")
 	const [error, setError] = useState<string | null>(null)
@@ -32,6 +34,19 @@ export default function RegisterScreen() {
 			padding: 32,
 			justifyContent: "center",
 			gap: 12,
+		},
+		nameRow: {
+			flexDirection: "row",
+			gap: 12,
+		},
+		nameInput: {
+			flex: 1,
+			backgroundColor: theme.surface,
+			borderRadius,
+			paddingHorizontal: 16,
+			paddingVertical: 14,
+			color: theme.text,
+			fontSize: 16,
 		},
 		input: {
 			backgroundColor: theme.surface,
@@ -55,17 +70,22 @@ export default function RegisterScreen() {
 	})
 
 	const handleSubmit = async () => {
-		if (!name.trim() || !email.trim() || !password.trim()) {
+		if (
+			!firstName.trim() ||
+			!lastName.trim() ||
+			!email.trim() ||
+			!password.trim()
+		) {
 			setError("Please fill in all fields.")
 			return
 		}
 		setIsLoading(true)
 		setError(null)
 		try {
-			await BackendAPI.register(name.trim(), email.trim(), password)
+			await register(firstName.trim(), lastName.trim(), email.trim(), password)
 			router.push("/(onboarding)/goal-wizard")
-		} catch {
-			setError("Coming soon! Continue as a guest for now.")
+		} catch (e: any) {
+			setError(e?.response?.data?.message ?? "Registration failed. Please try again.")
 		} finally {
 			setIsLoading(false)
 		}
@@ -82,14 +102,25 @@ export default function RegisterScreen() {
 					Set up your account to sync your data.
 				</ThemedText>
 
-				<TextInput
-					style={styles.input}
-					placeholder="Name"
-					placeholderTextColor={theme.text + "80"}
-					value={name}
-					onChangeText={setName}
-					autoCapitalize="words"
-				/>
+				<View style={styles.nameRow}>
+					<TextInput
+						style={styles.nameInput}
+						placeholder="First name"
+						placeholderTextColor={theme.text + "80"}
+						value={firstName}
+						onChangeText={setFirstName}
+						autoCapitalize="words"
+					/>
+					<TextInput
+						style={styles.nameInput}
+						placeholder="Last name"
+						placeholderTextColor={theme.text + "80"}
+						value={lastName}
+						onChangeText={setLastName}
+						autoCapitalize="words"
+					/>
+				</View>
+
 				<TextInput
 					style={styles.input}
 					placeholder="Email"
@@ -109,7 +140,7 @@ export default function RegisterScreen() {
 				/>
 
 				{error && (
-					<ThemedText type="subtitleLight" color="#F59E0B">
+					<ThemedText type="subtitleLight" color={theme.error}>
 						{error}
 					</ThemedText>
 				)}
