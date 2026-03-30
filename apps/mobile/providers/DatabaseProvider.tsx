@@ -134,6 +134,25 @@ export const DiaryProvider: React.FC<{ children: React.ReactNode }> = ({
 					`CREATE INDEX IF NOT EXISTS favorite_food_food_id ON favorite_food(food_id);`
 				)
 
+				// Migration v1: add sync metadata columns
+				const versionRow = await database.getFirstAsync<{ user_version: number }>(
+					"PRAGMA user_version"
+				)
+				const dbVersion = versionRow?.user_version ?? 0
+				if (dbVersion < 1) {
+					try {
+						await database.execAsync(
+							`ALTER TABLE diary_entries ADD COLUMN synced_at TEXT;`
+						)
+					} catch {}
+					try {
+						await database.execAsync(
+							`ALTER TABLE favorite_food ADD COLUMN synced_at TEXT;`
+						)
+					} catch {}
+					await database.execAsync(`PRAGMA user_version = 1;`)
+				}
+
 				console.log("Database initialized successfully")
 				setDb(database)
 			} catch (error) {

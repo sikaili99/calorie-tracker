@@ -12,11 +12,13 @@ import { useThemeColor } from "@/hooks/useThemeColor"
 import { ThemedText } from "@/components/ThemedText"
 import { CustomPressable } from "@/components/CustomPressable"
 import { useAuth } from "@/providers/AuthProvider"
+import { useDiarySync } from "@/hooks/useDiarySync"
 import { borderRadius } from "@/constants/Theme"
 
 export default function RegisterScreen() {
 	const theme = useThemeColor()
 	const { register } = useAuth()
+	const { pushPending } = useDiarySync()
 	const [firstName, setFirstName] = useState("")
 	const [lastName, setLastName] = useState("")
 	const [email, setEmail] = useState("")
@@ -83,6 +85,8 @@ export default function RegisterScreen() {
 		setError(null)
 		try {
 			await register(firstName.trim(), lastName.trim(), email.trim(), password)
+			// push any entries logged before registering
+			pushPending().catch(() => {})
 			router.push("/(onboarding)/goal-wizard")
 		} catch (e: any) {
 			setError(e?.response?.data?.message ?? "Registration failed. Please try again.")

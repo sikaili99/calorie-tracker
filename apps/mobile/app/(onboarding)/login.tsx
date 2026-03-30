@@ -13,6 +13,7 @@ import { ThemedText } from "@/components/ThemedText"
 import { CustomPressable } from "@/components/CustomPressable"
 import { useAuth } from "@/providers/AuthProvider"
 import { useSettings } from "@/providers/SettingsProvider"
+import { useDiarySync } from "@/hooks/useDiarySync"
 import { borderRadius } from "@/constants/Theme"
 import Ionicons from "@expo/vector-icons/Ionicons"
 
@@ -20,6 +21,7 @@ export default function LoginScreen() {
 	const theme = useThemeColor()
 	const { login, loginWithGoogle } = useAuth()
 	const { updateOnboardingComplete } = useSettings()
+	const { pullAll, pushPending } = useDiarySync()
 	const [email, setEmail] = useState("")
 	const [password, setPassword] = useState("")
 	const [error, setError] = useState<string | null>(null)
@@ -94,6 +96,9 @@ export default function LoginScreen() {
 		setError(null)
 		try {
 			await login(email.trim(), password)
+			await updateOnboardingComplete(true)
+			// fire-and-forget: restore remote entries then push any local ones
+			pullAll().then(() => pushPending()).catch(() => {})
 			router.replace("/(tabs)")
 		} catch (e: any) {
 			setError(e?.response?.data?.message ?? "Invalid email or password.")
@@ -107,6 +112,8 @@ export default function LoginScreen() {
 		setError(null)
 		try {
 			await loginWithGoogle()
+			await updateOnboardingComplete(true)
+			pullAll().then(() => pushPending()).catch(() => {})
 			router.replace("/(tabs)")
 		} catch (e: any) {
 			if (e?.message !== "Dismissed") {

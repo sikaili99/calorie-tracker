@@ -17,6 +17,8 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   refreshTokens RefreshToken[]
+  diaryEntries  DiaryEntry[]
+  favorites     FavoriteFood[]
 }
 
 model RefreshToken {
@@ -26,4 +28,54 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
+}
+
+model Food {
+  id              String         @id
+  name            String
+  brand           String?
+  isCustomEntry   Boolean        @default(false)
+  isCustomFood    Boolean        @default(false)
+  servingQuantity Float          @default(100)
+  energyPer100g   Float
+  proteinPer100g  Float?
+  carbsPer100g    Float?
+  fatPer100g      Float?
+  createdAt       DateTime       @default(now())
+  diaryEntries    DiaryEntry[]
+  favorites       FavoriteFood[]
+}
+
+model DiaryEntry {
+  id           String    @id @default(uuid())
+  localId      Int
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foodId       String
+  food         Food      @relation(fields: [foodId], references: [id])
+  quantity     Float
+  isServings   Boolean
+  date         String
+  mealType     Int
+  kcalTotal    Float
+  proteinTotal Float
+  carbsTotal   Float
+  fatTotal     Float
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  @@unique([userId, localId])
+  @@index([userId, date])
+}
+
+model FavoriteFood {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foodId    String
+  food      Food     @relation(fields: [foodId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, foodId])
 }

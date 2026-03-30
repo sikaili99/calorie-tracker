@@ -217,7 +217,7 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 			await updateSetting(
 				"NOTIFICATIONS_ENABLED",
 				"notificationsEnabled",
-				value ? 1 : 0
+				value
 			)
 			if (!value) {
 				await cancelDailyReminder()

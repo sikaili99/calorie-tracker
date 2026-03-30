@@ -11,6 +11,9 @@ export function isISODateString(date: string): date is ISODateString {
 }
 
 export function toISODateString(date: Date): ISODateString {
+	if (isNaN(date.getTime())) {
+		throw new RangeError("toISODateString: invalid Date")
+	}
 	const dateString = date.toISOString().split("T")[0]
 	if (!isISODateString(dateString)) {
 		throw new Error("Failed to convert Date to ISODateString")
@@ -563,7 +566,7 @@ export const useDatabase = () => {
 	)
 
 	const fetchStreakData = useCallback(async (): Promise<ISODateString[]> => {
-		if (!db) throw dbNotInitializedError
+		if (!db) return []
 		const rows = ((await db.getAllAsync(
 			`SELECT DISTINCT date FROM diary_entries
 			 WHERE date >= DATE('now', '-365 days')

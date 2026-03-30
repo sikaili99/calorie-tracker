@@ -7,6 +7,10 @@ import { WeeklyReport } from "@/interfaces/WeeklyReport"
 
 function getISOWeekStart(date: Date): ISODateString {
 	const d = new Date(date)
+	if (isNaN(d.getTime())) {
+		// Fall back to today if given an invalid date
+		d.setTime(Date.now())
+	}
 	// Monday-based week
 	const day = d.getUTCDay() || 7
 	d.setUTCDate(d.getUTCDate() - day + 1)
@@ -45,7 +49,9 @@ export const useWeeklyReport = () => {
 
 	const generateReport = useCallback(
 		async (forDate?: Date) => {
-			const date = forDate ?? new Date()
+			const date = (forDate instanceof Date && !isNaN(forDate.getTime()))
+				? forDate
+				: new Date()
 			const weekStart = getISOWeekStart(date)
 
 			// Check cache first
@@ -113,7 +119,9 @@ export const useWeeklyReport = () => {
 
 	const loadForDate = useCallback(
 		async (date: Date) => {
-			const weekStart = getISOWeekStart(date)
+			const weekStart = getISOWeekStart(
+				date instanceof Date && !isNaN(date.getTime()) ? date : new Date()
+			)
 			const cached = await loadCached(weekStart)
 			if (cached) setReport(cached)
 			else setReport(null)

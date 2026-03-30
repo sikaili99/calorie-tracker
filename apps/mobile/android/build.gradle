@@ -1,5 +1,15 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
+// Set ext properties as integers before any plugin runs, so safeExtGet in
+// subproject libraries picks up proper integer values instead of null/strings.
+ext {
+    minSdkVersion = 24
+    compileSdkVersion = 36
+    targetSdkVersion = 36
+    ndkVersion = "28.2.13676358"
+    buildToolsVersion = "36.0.0"
+}
+
 buildscript {
   repositories {
     google()

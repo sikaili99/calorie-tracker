@@ -21,7 +21,7 @@ SplashScreen.preventAutoHideAsync()
 
 function AppNavigator({ fontsLoaded }: { fontsLoaded: boolean }) {
 	const theme = useThemeColor()
-	const { settingsLoaded, onboardingComplete } = useSettings()
+	const { settingsLoaded } = useSettings()
 
 	useEffect(() => {
 		if (fontsLoaded && settingsLoaded) {
@@ -29,19 +29,15 @@ function AppNavigator({ fontsLoaded }: { fontsLoaded: boolean }) {
 		}
 	}, [fontsLoaded, settingsLoaded])
 
-	if (!fontsLoaded || !settingsLoaded) {
-		return null
-	}
-
 	return (
 		<View style={{ flex: 1, backgroundColor: theme.background }}>
 			<Stack
-				initialRouteName={onboardingComplete ? "(tabs)" : "(onboarding)"}
 				screenOptions={{
 					animation: "ios_from_right",
 					animationDuration: 150,
 				}}
 			>
+				<Stack.Screen name="index" options={{ headerShown: false }} />
 				<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
 				<Stack.Screen
 					name="(onboarding)"

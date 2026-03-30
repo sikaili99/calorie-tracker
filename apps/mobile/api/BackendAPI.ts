@@ -3,7 +3,14 @@ import { BACKEND_BASE_URL } from "@/constants/BackendConfig"
 import { Food } from "@/hooks/useDatabase"
 import { DailySummary } from "@/hooks/useHistoricalData"
 import { tokenStorage } from "@/utils/tokenStorage"
-import type { AuthResponse, AuthUser } from "@calorie-tracker/shared-types"
+import type {
+	AuthResponse,
+	AuthUser,
+	SyncEntriesRequest,
+	SyncEntriesResponse,
+	SyncFavoritesRequest,
+	RemoteDiaryEntry,
+} from "@calorie-tracker/shared-types"
 
 // ─── Shared types ────────────────────────────────────────────────────────────
 
@@ -241,5 +248,26 @@ export const BackendAPI = {
 
 	async logout(refreshToken: string): Promise<void> {
 		await client.post("/auth/logout", { refreshToken })
+	},
+
+	async syncDiaryEntries(
+		dto: SyncEntriesRequest
+	): Promise<SyncEntriesResponse> {
+		const response = await client.post<SyncEntriesResponse>(
+			"/diary/sync",
+			dto
+		)
+		return response.data
+	},
+
+	async pullDiaryEntries(since?: string): Promise<RemoteDiaryEntry[]> {
+		const response = await client.get<RemoteDiaryEntry[]>("/diary/pull", {
+			params: since ? { since } : undefined,
+		})
+		return response.data
+	},
+
+	async syncFavorites(dto: SyncFavoritesRequest): Promise<void> {
+		await client.post("/diary/favorites/sync", dto)
 	},
 }
