@@ -6,21 +6,13 @@ import { useThemeColor } from "@/hooks/useThemeColor"
 import { SelectionContext } from "@/providers/SelectionProvider"
 import { useSettings } from "@/providers/SettingsProvider"
 import { Ionicons } from "@expo/vector-icons"
-let Camera: any = () => null
-let useCameraDevice: any = () => null
-let useCameraPermission: any = () => ({ hasPermission: false, requestPermission: async () => false })
-let useCodeScanner: any = () => ({})
-type Code = { value?: string }
-
-try {
-	const visionCamera = require("react-native-vision-camera")
-	Camera = visionCamera.Camera
-	useCameraDevice = visionCamera.useCameraDevice
-	useCameraPermission = visionCamera.useCameraPermission
-	useCodeScanner = visionCamera.useCodeScanner
-} catch {
-	// Native camera module unavailable (e.g. iOS simulator) — barcode scanning disabled
-}
+import {
+	Camera,
+	Code,
+	useCameraDevice,
+	useCameraPermission,
+	useCodeScanner,
+} from "react-native-vision-camera"
 import { router, useLocalSearchParams, useFocusEffect } from "expo-router"
 import { useCallback, useContext, useEffect, useMemo, useState } from "react"
 import { ActivityIndicator, StyleSheet, View } from "react-native"
