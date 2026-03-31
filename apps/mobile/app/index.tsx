@@ -5,5 +5,6 @@ import { useSettings } from "@/providers/SettingsProvider"
 export default function Index() {
 	const { onboardingComplete, settingsLoaded } = useSettings()
 	if (!settingsLoaded) return <View style={{ flex: 1 }} />
-	return <Redirect href={onboardingComplete ? "/(tabs)" : "/(onboarding)"} />
+	if (!onboardingComplete) return <Redirect href="/(onboarding)" />
+	return <Redirect href="/(tabs)" />
 }
