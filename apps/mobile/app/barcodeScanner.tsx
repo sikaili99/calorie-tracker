@@ -6,13 +6,21 @@ import { useThemeColor } from "@/hooks/useThemeColor"
 import { SelectionContext } from "@/providers/SelectionProvider"
 import { useSettings } from "@/providers/SettingsProvider"
 import { Ionicons } from "@expo/vector-icons"
-import {
-	Camera,
-	Code,
-	useCameraDevice,
-	useCameraPermission,
-	useCodeScanner,
-} from "react-native-vision-camera"
+let Camera: any = () => null
+let useCameraDevice: any = () => null
+let useCameraPermission: any = () => ({ hasPermission: false, requestPermission: async () => false })
+let useCodeScanner: any = () => ({})
+type Code = { value?: string }
+
+try {
+	const visionCamera = require("react-native-vision-camera")
+	Camera = visionCamera.Camera
+	useCameraDevice = visionCamera.useCameraDevice
+	useCameraPermission = visionCamera.useCameraPermission
+	useCodeScanner = visionCamera.useCodeScanner
+} catch {
+	// Native camera module unavailable (e.g. iOS simulator) — barcode scanning disabled
+}
 import { router, useLocalSearchParams, useFocusEffect } from "expo-router"
 import { useCallback, useContext, useEffect, useMemo, useState } from "react"
 import { ActivityIndicator, StyleSheet, View } from "react-native"
@@ -113,7 +121,7 @@ export default function BarcodeScanner() {
 
 	const codeScanner = useCodeScanner({
 		codeTypes: ["upc-e", "upc-a", "ean-13", "ean-8"],
-		onCodeScanned: (codes) => {
+		onCodeScanned: (codes: Code[]) => {
 			if (codes.length > 0) {
 				handleBarcodeScanned(codes[0])
 			}
@@ -170,18 +178,18 @@ export default function BarcodeScanner() {
 								torch={torch}
 								codeScanner={codeScanner}
 								isActive={cameraActive}
-							>
-								<View style={styles.buttonContainer}>
-									<CustomPressable onPress={handleFlash}>
-										<Ionicons
-											name={torch ? "flash-off" : "flash"}
-											size={28}
-											color={theme.text}
-										/>
-									</CustomPressable>
-								</View>
-							</Camera>
-						</View>
+								>
+									<View style={styles.buttonContainer}>
+										<CustomPressable onPress={handleFlash}>
+											<Ionicons
+												name={torch === "on" ? "flash-off" : "flash"}
+												size={28}
+												color={theme.text}
+											/>
+										</CustomPressable>
+									</View>
+								</Camera>
+							</View>
 					</>
 				)}
 			</View>

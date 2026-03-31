@@ -6,12 +6,13 @@ import {
 	StyleSheet,
 	PressableProps,
 	ViewStyle,
+	StyleProp,
 } from "react-native"
 
-type CustomPressableProps = PressableProps &
+type CustomPressableProps = Omit<PressableProps, "style"> &
 	React.PropsWithChildren & {
 		borderRadius?: number
-		style?: ViewStyle
+		style?: StyleProp<ViewStyle>
 	}
 
 export const CustomPressable = ({
@@ -62,7 +63,7 @@ export const CustomPressable = ({
 	)
 
 	return (
-		<View style={styles.wrapper}>
+		<View style={styles.wrapper} testID={props.testID}>
 			<Pressable
 				android_ripple={{
 					color: theme.text,
