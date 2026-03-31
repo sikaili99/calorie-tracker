@@ -114,6 +114,7 @@ export default function RegisterScreen() {
 						value={firstName}
 						onChangeText={setFirstName}
 						autoCapitalize="words"
+						testID="register-first-name"
 					/>
 					<TextInput
 						style={styles.nameInput}
@@ -122,6 +123,7 @@ export default function RegisterScreen() {
 						value={lastName}
 						onChangeText={setLastName}
 						autoCapitalize="words"
+						testID="register-last-name"
 					/>
 				</View>
 
@@ -133,6 +135,7 @@ export default function RegisterScreen() {
 					onChangeText={setEmail}
 					keyboardType="email-address"
 					autoCapitalize="none"
+					testID="register-email"
 				/>
 				<TextInput
 					style={styles.input}
@@ -141,6 +144,7 @@ export default function RegisterScreen() {
 					value={password}
 					onChangeText={setPassword}
 					secureTextEntry
+					testID="register-password"
 				/>
 
 				{error && (
@@ -154,6 +158,7 @@ export default function RegisterScreen() {
 					style={styles.primaryButton}
 					onPress={handleSubmit}
 					disabled={isLoading}
+					testID="register-submit"
 				>
 					<ThemedText type="defaultSemiBold" color={theme.background}>
 						{isLoading ? "Creating…" : "Create Account"}

@@ -1,0 +1,8 @@
+appId: com.antomanc.simplecalorietracker
+---
+# Complete onboarding then verify Achievements tab
+- runFlow: onboarding_guest.yaml
+- tapOn:
+    id: "tab-achievements"
+- assertVisible:
+    text: "Achievements"

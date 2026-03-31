@@ -54,6 +54,7 @@ export default function WelcomeScreen() {
 				borderRadius={borderRadius}
 				style={styles.button}
 				onPress={() => router.push("/(onboarding)/auth-choice")}
+				testID="welcome-get-started"
 			>
 				<ThemedText type="defaultSemiBold" color={theme.background}>
 					Get Started

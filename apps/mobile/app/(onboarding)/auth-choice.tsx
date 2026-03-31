@@ -60,6 +60,7 @@ export default function AuthChoiceScreen() {
 				borderRadius={borderRadius}
 				style={styles.primaryButton}
 				onPress={() => router.push("/(onboarding)/register")}
+				testID="auth-choice-create-account"
 			>
 				<ThemedText type="defaultSemiBold" color={theme.background}>
 					Create Account
@@ -70,6 +71,7 @@ export default function AuthChoiceScreen() {
 				borderRadius={borderRadius}
 				style={styles.secondaryButton}
 				onPress={() => router.push("/(onboarding)/goal-wizard")}
+				testID="auth-choice-guest"
 			>
 				<ThemedText type="defaultSemiBold">Continue as Guest</ThemedText>
 			</CustomPressable>
@@ -80,6 +82,7 @@ export default function AuthChoiceScreen() {
 				borderRadius={borderRadius}
 				style={styles.linkButton}
 				onPress={() => router.push("/(onboarding)/login")}
+				testID="auth-choice-signin"
 			>
 				<ThemedText type="subtitleLight" color={theme.primary}>
 					Already have an account? Sign In

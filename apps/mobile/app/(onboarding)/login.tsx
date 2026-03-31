@@ -148,6 +148,7 @@ export default function LoginScreen() {
 					onChangeText={setEmail}
 					keyboardType="email-address"
 					autoCapitalize="none"
+					testID="login-email"
 				/>
 				<TextInput
 					style={styles.input}
@@ -156,6 +157,7 @@ export default function LoginScreen() {
 					value={password}
 					onChangeText={setPassword}
 					secureTextEntry
+					testID="login-password"
 				/>
 
 				{error && (
@@ -169,6 +171,7 @@ export default function LoginScreen() {
 					style={styles.primaryButton}
 					onPress={handleSubmit}
 					disabled={isLoading}
+					testID="login-submit"
 				>
 					<ThemedText type="defaultSemiBold" color={theme.background}>
 						{isLoading ? "Signing in…" : "Sign In"}
@@ -197,6 +200,7 @@ export default function LoginScreen() {
 					borderRadius={borderRadius}
 					style={styles.guestButton}
 					onPress={handleContinueAsGuest}
+					testID="login-guest"
 				>
 					<ThemedText type="default">Continue as Guest</ThemedText>
 				</CustomPressable>

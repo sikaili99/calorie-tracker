@@ -1,0 +1,13 @@
+appId: com.antomanc.simplecalorietracker
+---
+# Verify all auth choice options are visible and tappable
+- launchApp:
+    clearState: true
+- tapOn:
+    id: "welcome-get-started"
+- assertVisible:
+    id: "auth-choice-create-account"
+- assertVisible:
+    id: "auth-choice-guest"
+- assertVisible:
+    id: "auth-choice-signin"

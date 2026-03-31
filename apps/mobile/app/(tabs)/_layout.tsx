@@ -1,12 +1,17 @@
-import { Tabs } from "expo-router"
+import { Redirect, Tabs } from "expo-router"
 import Ionicons from "@expo/vector-icons/Ionicons"
 import * as Haptics from "expo-haptics"
 import { useThemeColor } from "@/hooks/useThemeColor"
 import { useMemo } from "react"
-import { StyleSheet } from "react-native"
+import { StyleSheet, View } from "react-native"
+import { useSettings } from "@/providers/SettingsProvider"
 
 export default function TabLayout() {
 	const theme = useThemeColor()
+	const { onboardingComplete, settingsLoaded } = useSettings()
+
+	if (!settingsLoaded) return <View style={{ flex: 1 }} />
+	if (!onboardingComplete) return <Redirect href="/(onboarding)" />
 	const handleTabPress = () => {
 		// TODO add a setting to enable/disable haptics
 		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
@@ -41,6 +46,7 @@ export default function TabLayout() {
 					title: "Diary",
 					headerShown: false,
 					tabBarLabelStyle: styles.label,
+					tabBarButtonTestID: "tab-diary",
 					tabBarIcon: ({ color, focused }) => (
 						<Ionicons
 							name={focused ? "book" : "book-outline"}
@@ -59,6 +65,7 @@ export default function TabLayout() {
 					title: "Coach",
 					headerShown: false,
 					tabBarLabelStyle: styles.label,
+					tabBarButtonTestID: "tab-coach",
 					tabBarIcon: ({ color, focused }) => (
 						<Ionicons
 							name={
@@ -81,6 +88,7 @@ export default function TabLayout() {
 					title: "Achievements",
 					headerShown: false,
 					tabBarLabelStyle: styles.label,
+					tabBarButtonTestID: "tab-achievements",
 					tabBarIcon: ({ color, focused }) => (
 						<Ionicons
 							name={focused ? "trophy" : "trophy-outline"}
@@ -99,6 +107,7 @@ export default function TabLayout() {
 					title: "History",
 					headerShown: false,
 					tabBarLabelStyle: styles.label,
+					tabBarButtonTestID: "tab-history",
 					tabBarIcon: ({ color, focused }) => (
 						<Ionicons
 							name={focused ? "calendar" : "calendar-outline"}
@@ -117,6 +126,7 @@ export default function TabLayout() {
 					title: "Settings",
 					headerShown: false,
 					tabBarLabelStyle: styles.label,
+					tabBarButtonTestID: "tab-settings",
 					tabBarIcon: ({ color, focused }) => (
 						<Ionicons
 							name={focused ? "settings" : "settings-outline"}

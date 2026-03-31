@@ -1,0 +1,17 @@
+appId: com.antomanc.simplecalorietracker
+---
+# Verify login screen is accessible and has all fields
+- launchApp:
+    clearState: true
+- tapOn:
+    id: "welcome-get-started"
+- tapOn:
+    id: "auth-choice-signin"
+- assertVisible:
+    id: "login-email"
+- assertVisible:
+    id: "login-password"
+- assertVisible:
+    id: "login-submit"
+- assertVisible:
+    id: "login-guest"

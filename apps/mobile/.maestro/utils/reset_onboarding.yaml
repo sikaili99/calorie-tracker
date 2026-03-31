@@ -1,0 +1,5 @@
+appId: com.antomanc.simplecalorietracker
+---
+# Helper: clears all app state including onboarding flag
+- launchApp:
+    clearState: true

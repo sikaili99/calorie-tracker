@@ -1,0 +1,19 @@
+appId: com.antomanc.simplecalorietracker
+---
+# Full guest flow: welcome → auth-choice → goal-wizard (skip) → tabs
+- launchApp:
+    clearState: true
+- assertVisible:
+    id: "welcome-get-started"
+- tapOn:
+    id: "welcome-get-started"
+- assertVisible:
+    id: "auth-choice-guest"
+- tapOn:
+    id: "auth-choice-guest"
+- assertVisible:
+    id: "goal-wizard-skip"
+- tapOn:
+    id: "goal-wizard-skip"
+- assertVisible:
+    id: "tab-diary"

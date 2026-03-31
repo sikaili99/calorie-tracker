@@ -1,0 +1,11 @@
+appId: com.antomanc.simplecalorietracker
+---
+# Verify welcome screen appears on fresh app launch
+- launchApp:
+    clearState: true
+- assertVisible:
+    id: "welcome-get-started"
+- tapOn:
+    id: "welcome-get-started"
+- assertVisible:
+    id: "auth-choice-create-account"

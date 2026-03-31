@@ -182,7 +182,7 @@ export default function GoalWizardScreen() {
 				</View>
 				<View style={styles.header}>
 					<ThemedText type="subtitleLight">Step {step} of 4</ThemedText>
-					<TouchableOpacity onPress={handleSkip} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+					<TouchableOpacity onPress={handleSkip} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} testID="goal-wizard-skip">
 						<ThemedText type="subtitleLight" color={theme.primary}>
 							Skip
 						</ThemedText>
@@ -291,6 +291,7 @@ export default function GoalWizardScreen() {
 						borderRadius={borderRadius}
 						style={{ ...styles.primaryButton, ...styles.flex, marginTop: 0 }}
 						onPress={step < 4 ? handleNext : handleFinish}
+						testID="goal-wizard-next"
 					>
 						<ThemedText type="defaultSemiBold" color={theme.background}>
 							{step < 4 ? "Next" : "Finish"}

@@ -1,0 +1,8 @@
+appId: com.antomanc.simplecalorietracker
+---
+# Complete onboarding then verify History tab
+- runFlow: onboarding_guest.yaml
+- tapOn:
+    id: "tab-history"
+- assertVisible:
+    text: "History"

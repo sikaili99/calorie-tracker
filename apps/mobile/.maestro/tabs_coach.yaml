@@ -1,0 +1,8 @@
+appId: com.antomanc.simplecalorietracker
+---
+# Complete onboarding then verify Coach tab
+- runFlow: onboarding_guest.yaml
+- tapOn:
+    id: "tab-coach"
+- assertVisible:
+    text: "Coach"

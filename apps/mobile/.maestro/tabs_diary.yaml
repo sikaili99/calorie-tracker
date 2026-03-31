@@ -1,0 +1,10 @@
+appId: com.antomanc.simplecalorietracker
+---
+# Complete onboarding then verify Diary tab
+- runFlow: onboarding_guest.yaml
+- assertVisible:
+    id: "tab-diary"
+- tapOn:
+    id: "tab-diary"
+- assertVisible:
+    text: "Diary"

@@ -1,0 +1,8 @@
+appId: com.antomanc.simplecalorietracker
+---
+# Complete onboarding then verify Settings tab
+- runFlow: onboarding_guest.yaml
+- tapOn:
+    id: "tab-settings"
+- assertVisible:
+    text: "Settings"
