@@ -3,10 +3,10 @@ import { useEffect } from "react"
 import { View } from "react-native"
 
 export default function NotFoundScreen() {
-	// automatically navigate to the diary screen
+	// Send unknown paths through root route selection (onboarding vs tabs).
 	useEffect(() => {
 		setTimeout(() => {
-			router.replace("/diary")
+			router.replace("/")
 		}, 1)
 	}, [])
 

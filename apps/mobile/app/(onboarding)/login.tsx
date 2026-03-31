@@ -99,7 +99,7 @@ export default function LoginScreen() {
 			await updateOnboardingComplete(true)
 			// fire-and-forget: restore remote entries then push any local ones
 			pullAll().then(() => pushPending()).catch(() => {})
-			router.replace("/(tabs)")
+			router.replace("/diary")
 		} catch (e: any) {
 			setError(e?.response?.data?.message ?? "Invalid email or password.")
 		} finally {
@@ -114,7 +114,7 @@ export default function LoginScreen() {
 			await loginWithGoogle()
 			await updateOnboardingComplete(true)
 			pullAll().then(() => pushPending()).catch(() => {})
-			router.replace("/(tabs)")
+			router.replace("/diary")
 		} catch (e: any) {
 			if (e?.message !== "Dismissed") {
 				setError("Google sign-in failed. Please try again.")
@@ -126,7 +126,7 @@ export default function LoginScreen() {
 
 	const handleContinueAsGuest = async () => {
 		await updateOnboardingComplete(true)
-		router.replace("/(tabs)")
+		router.replace("/diary")
 	}
 
 	return (

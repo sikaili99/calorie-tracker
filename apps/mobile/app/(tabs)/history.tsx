@@ -20,7 +20,7 @@ export default function HistoryTab() {
 		// Navigate to diary with the selected date
 		// We use router.push with a date param; diary.tsx reads it from params
 		router.push({
-			pathname: "/(tabs)/diary",
+			pathname: "/diary",
 			params: { date },
 		})
 	}, [])

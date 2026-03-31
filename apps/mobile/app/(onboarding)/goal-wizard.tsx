@@ -125,7 +125,7 @@ export default function GoalWizardScreen() {
 
 	const handleSkip = async () => {
 		await updateOnboardingComplete(true)
-		router.replace("/(tabs)")
+		router.replace("/diary")
 	}
 
 	const handleBack = () => {
@@ -160,7 +160,7 @@ export default function GoalWizardScreen() {
 			updateTargetFatPercentage(tdee.fatPct),
 			updateOnboardingComplete(true),
 		])
-		router.replace("/(tabs)")
+		router.replace("/diary")
 	}
 
 	return (

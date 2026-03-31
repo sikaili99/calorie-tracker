@@ -104,7 +104,24 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 	const getStoredSetting = useCallback(
 		async <T,>(key: string, defaultValue: T): Promise<T> => {
 			const stored = await AsyncStorage.getItem(key)
-			return stored ? (JSON.parse(stored) as T) : defaultValue
+			if (stored === null) return defaultValue
+
+			try {
+				return JSON.parse(stored) as T
+			} catch {
+				if (typeof defaultValue === "number") {
+					const parsed = Number(stored)
+					return (Number.isFinite(parsed) ? parsed : defaultValue) as T
+				}
+				if (typeof defaultValue === "boolean") {
+					if (stored === "1" || stored.toLowerCase() === "true")
+						return true as T
+					if (stored === "0" || stored.toLowerCase() === "false")
+						return false as T
+					return defaultValue
+				}
+				return stored as T
+			}
 		},
 		[]
 	)
@@ -123,93 +140,98 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 
 	useEffect(() => {
 		const loadSettings = async () => {
-			const targetCalories = await getStoredSetting(
-				"TARGET_CALORIES",
-				2200
-			)
-			const targetCarbsPercentage = await getStoredSetting(
-				"TARGET_CARBS_PERCENTAGE",
-				50
-			)
-			const targetProteinPercentage = await getStoredSetting(
-				"TARGET_PROTEIN_PERCENTAGE",
-				25
-			)
-			const targetFatPercentage = await getStoredSetting(
-				"TARGET_FAT_PERCENTAGE",
-				25
-			)
-			const usdaApiKey = await getStoredSetting("USDA_API_KEY", "")
-			let userUuid = await getStoredSetting("USER_UUID", "")
-			if (!userUuid) {
-				const uuid = Crypto.randomUUID()
-				await AsyncStorage.setItem("USER_UUID", JSON.stringify(uuid))
-				userUuid = uuid
+			try {
+				const targetCalories = await getStoredSetting(
+					"TARGET_CALORIES",
+					2200
+				)
+				const targetCarbsPercentage = await getStoredSetting(
+					"TARGET_CARBS_PERCENTAGE",
+					50
+				)
+				const targetProteinPercentage = await getStoredSetting(
+					"TARGET_PROTEIN_PERCENTAGE",
+					25
+				)
+				const targetFatPercentage = await getStoredSetting(
+					"TARGET_FAT_PERCENTAGE",
+					25
+				)
+				const usdaApiKey = await getStoredSetting("USDA_API_KEY", "")
+				let userUuid = await getStoredSetting("USER_UUID", "")
+				if (!userUuid) {
+					const uuid = Crypto.randomUUID()
+					await AsyncStorage.setItem("USER_UUID", JSON.stringify(uuid))
+					userUuid = uuid
+				}
+				const notificationsEnabledRaw = await getStoredSetting<
+					boolean | number
+				>("NOTIFICATIONS_ENABLED", false)
+				const notificationsEnabled = Boolean(notificationsEnabledRaw)
+				const reminderHour = await getStoredSetting("REMINDER_HOUR", 20)
+				const reminderMinute = await getStoredSetting(
+					"REMINDER_MINUTE",
+					0
+				)
+				const onboardingComplete = await getStoredSetting(
+					"ONBOARDING_COMPLETE",
+					false
+				)
+				const isPremiumRaw = await getStoredSetting<boolean | number>(
+					"IS_PREMIUM",
+					false
+				)
+				const isPremium = Boolean(isPremiumRaw)
+				const userName = await getStoredSetting<string | undefined>(
+					"USER_NAME",
+					undefined
+				)
+				const userAge = await getStoredSetting<number | undefined>(
+					"USER_AGE",
+					undefined
+				)
+				const userWeightKg = await getStoredSetting<number | undefined>(
+					"USER_WEIGHT_KG",
+					undefined
+				)
+				const userHeightCm = await getStoredSetting<number | undefined>(
+					"USER_HEIGHT_CM",
+					undefined
+				)
+				const activityLevel = await getStoredSetting<
+					ActivityLevel | undefined
+				>("ACTIVITY_LEVEL", undefined)
+				const goalType = await getStoredSetting<GoalType | undefined>(
+					"GOAL_TYPE",
+					undefined
+				)
+				setSettings({
+					targetCalories,
+					targetCarbsPercentage,
+					targetProteinPercentage,
+					targetFatPercentage,
+					usdaApiKey,
+					userUuid,
+					notificationsEnabled,
+					reminderHour,
+					reminderMinute,
+					onboardingComplete,
+					settingsLoaded: true,
+					userName,
+					userAge,
+					userWeightKg,
+					userHeightCm,
+					activityLevel,
+					goalType,
+					isPremium,
+				})
+			} catch (error) {
+				console.warn("[SettingsProvider] Failed to load settings", error)
+				setSettings((prev) => ({ ...prev, settingsLoaded: true }))
 			}
-			const notificationsEnabledRaw = await getStoredSetting<
-				boolean | number
-			>("NOTIFICATIONS_ENABLED", false)
-			const notificationsEnabled = Boolean(notificationsEnabledRaw)
-			const reminderHour = await getStoredSetting("REMINDER_HOUR", 20)
-			const reminderMinute = await getStoredSetting(
-				"REMINDER_MINUTE",
-				0
-			)
-			const onboardingComplete = await getStoredSetting(
-				"ONBOARDING_COMPLETE",
-				false
-			)
-			const isPremiumRaw = await getStoredSetting<boolean | number>(
-				"IS_PREMIUM",
-				false
-			)
-			const isPremium = Boolean(isPremiumRaw)
-			const userName = await getStoredSetting<string | undefined>(
-				"USER_NAME",
-				undefined
-			)
-			const userAge = await getStoredSetting<number | undefined>(
-				"USER_AGE",
-				undefined
-			)
-			const userWeightKg = await getStoredSetting<number | undefined>(
-				"USER_WEIGHT_KG",
-				undefined
-			)
-			const userHeightCm = await getStoredSetting<number | undefined>(
-				"USER_HEIGHT_CM",
-				undefined
-			)
-			const activityLevel = await getStoredSetting<
-				ActivityLevel | undefined
-			>("ACTIVITY_LEVEL", undefined)
-			const goalType = await getStoredSetting<GoalType | undefined>(
-				"GOAL_TYPE",
-				undefined
-			)
-			setSettings({
-				targetCalories,
-				targetCarbsPercentage,
-				targetProteinPercentage,
-				targetFatPercentage,
-				usdaApiKey,
-				userUuid,
-				notificationsEnabled,
-				reminderHour,
-				reminderMinute,
-				onboardingComplete,
-				settingsLoaded: true,
-				userName,
-				userAge,
-				userWeightKg,
-				userHeightCm,
-				activityLevel,
-				goalType,
-				isPremium,
-			})
 		}
 
-		loadSettings()
+		void loadSettings()
 	}, [getStoredSetting])
 
 	const updateNotificationsEnabled = useCallback(

@@ -15,7 +15,7 @@ export const StreakBadge = ({ streak }: StreakBadgeProps) => {
 
 	return (
 		<TouchableOpacity
-			onPress={() => router.push("/(tabs)/achievements")}
+			onPress={() => router.push("/achievements")}
 			style={[styles.badge, { backgroundColor: theme.surface }]}
 			hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
 		>

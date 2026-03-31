@@ -1,8 +1,8 @@
-import { Tabs, router } from "expo-router"
+import { Tabs, Redirect } from "expo-router"
 import Ionicons from "@expo/vector-icons/Ionicons"
 import * as Haptics from "expo-haptics"
 import { useThemeColor } from "@/hooks/useThemeColor"
-import { useEffect, useMemo } from "react"
+import { useMemo } from "react"
 import { StyleSheet, View } from "react-native"
 import { useSettings } from "@/providers/SettingsProvider"
 
@@ -10,13 +10,9 @@ export default function TabLayout() {
 	const theme = useThemeColor()
 	const { onboardingComplete, settingsLoaded } = useSettings()
 
-	useEffect(() => {
-		if (settingsLoaded && !onboardingComplete) {
-			router.replace("/(onboarding)")
-		}
-	}, [settingsLoaded, onboardingComplete])
+	if (!settingsLoaded) return <View style={{ flex: 1 }} />
+	if (!onboardingComplete) return <Redirect href="/welcome" />
 
-	if (!settingsLoaded || !onboardingComplete) return <View style={{ flex: 1 }} />
 	const handleTabPress = () => {
 		// TODO add a setting to enable/disable haptics
 		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
