@@ -11,13 +11,13 @@ import {
 import { AuthService } from "./auth.service"
 import { LocalAuthGuard } from "./guards/local-auth.guard"
 import { JwtAuthGuard } from "./guards/jwt-auth.guard"
-import type {
-	RegisterRequest,
-	GoogleAuthRequest,
-	RefreshRequest,
-	LogoutRequest,
-	AuthUser,
-} from "@calorie-tracker/shared-types"
+import {
+	validateGoogleAuthRequest,
+	validateLogoutRequest,
+	validateRefreshRequest,
+	validateRegisterRequest,
+} from "./auth.validation"
+import type { AuthUser, JwtRequestUser } from "@calorie-tracker/shared-types"
 
 @Controller("auth")
 export class AuthController {
@@ -25,7 +25,8 @@ export class AuthController {
 
 	@Post("register")
 	@HttpCode(HttpStatus.CREATED)
-	register(@Body() dto: RegisterRequest) {
+	register(@Body() body: unknown) {
+		const dto = validateRegisterRequest(body)
 		return this.authService.register(dto)
 	}
 
@@ -38,25 +39,28 @@ export class AuthController {
 
 	@Post("google")
 	@HttpCode(HttpStatus.OK)
-	googleAuth(@Body() dto: GoogleAuthRequest) {
+	googleAuth(@Body() body: unknown) {
+		const dto = validateGoogleAuthRequest(body)
 		return this.authService.googleAuth(dto.idToken)
 	}
 
 	@Post("refresh")
 	@HttpCode(HttpStatus.OK)
-	refresh(@Body() dto: RefreshRequest) {
+	refresh(@Body() body: unknown) {
+		const dto = validateRefreshRequest(body)
 		return this.authService.refresh(dto.refreshToken)
 	}
 
 	@Post("logout")
 	@HttpCode(HttpStatus.NO_CONTENT)
-	logout(@Body() dto: LogoutRequest) {
+	logout(@Body() body: unknown) {
+		const dto = validateLogoutRequest(body)
 		return this.authService.logout(dto.refreshToken)
 	}
 
 	@Get("me")
 	@UseGuards(JwtAuthGuard)
-	me(@Request() req: { user: AuthUser }) {
-		return req.user
+	me(@Request() req: { user: JwtRequestUser }) {
+		return this.authService.getMe(req.user.id)
 	}
 }

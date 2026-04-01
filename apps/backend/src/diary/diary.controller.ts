@@ -16,7 +16,7 @@ import { DiaryService } from "./diary.service"
 import type {
 	SyncEntriesRequest,
 	SyncFavoritesRequest,
-	AuthUser,
+	JwtRequestUser,
 } from "@calorie-tracker/shared-types"
 
 @Controller("diary")
@@ -27,7 +27,7 @@ export class DiaryController {
 	@Post("sync")
 	@HttpCode(HttpStatus.OK)
 	sync(
-		@Request() req: { user: AuthUser },
+		@Request() req: { user: JwtRequestUser },
 		@Body() dto: SyncEntriesRequest
 	) {
 		return this.diaryService.syncEntries(req.user.id, dto)
@@ -36,7 +36,7 @@ export class DiaryController {
 	@Delete(":localId")
 	@HttpCode(HttpStatus.NO_CONTENT)
 	delete(
-		@Request() req: { user: AuthUser },
+		@Request() req: { user: JwtRequestUser },
 		@Param("localId") localId: string
 	) {
 		return this.diaryService.deleteEntry(req.user.id, parseInt(localId, 10))
@@ -45,7 +45,7 @@ export class DiaryController {
 	@Post("favorites/sync")
 	@HttpCode(HttpStatus.NO_CONTENT)
 	syncFavorites(
-		@Request() req: { user: AuthUser },
+		@Request() req: { user: JwtRequestUser },
 		@Body() dto: SyncFavoritesRequest
 	) {
 		return this.diaryService.syncFavorites(req.user.id, dto)
@@ -53,7 +53,7 @@ export class DiaryController {
 
 	@Get("pull")
 	pull(
-		@Request() req: { user: AuthUser },
+		@Request() req: { user: JwtRequestUser },
 		@Query("since") since?: string
 	) {
 		return this.diaryService.pullEntries(req.user.id, since)

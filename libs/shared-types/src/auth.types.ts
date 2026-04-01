@@ -35,6 +35,11 @@ export interface AuthResponse {
 	user: AuthUser
 }
 
+export interface JwtRequestUser {
+	id: string
+	email: string
+}
+
 export interface JwtPayload {
 	sub: string
 	email: string

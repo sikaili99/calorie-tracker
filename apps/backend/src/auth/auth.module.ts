@@ -12,10 +12,17 @@ import { JwtAuthGuard } from "./guards/jwt-auth.guard"
 	imports: [
 		PassportModule,
 		JwtModule.registerAsync({
-			useFactory: (config: ConfigService) => ({
-				secret: config.get<string>("JWT_SECRET") ?? "fallback-secret",
-				signOptions: { expiresIn: "15m" },
-			}),
+			useFactory: (config: ConfigService) => {
+				const jwtSecret = config.get<string>("JWT_SECRET")
+				if (!jwtSecret) {
+					throw new Error("JWT_SECRET is required")
+				}
+
+				return {
+					secret: jwtSecret,
+					signOptions: { expiresIn: "15m" },
+				}
+			},
 			inject: [ConfigService],
 		}),
 	],
