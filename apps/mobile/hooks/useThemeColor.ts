@@ -4,9 +4,21 @@
  */
 
 import { Colors } from "@/constants/Theme"
+import { useSettings } from "@/providers/SettingsProvider"
 import { useColorScheme } from "react-native"
 
+export function useResolvedColorScheme(): "light" | "dark" {
+	const systemColorScheme = useColorScheme()
+	const { themeMode } = useSettings()
+
+	if (themeMode === "system") {
+		return systemColorScheme === "dark" ? "dark" : "light"
+	}
+
+	return themeMode
+}
+
 export function useThemeColor() {
-	const colorScheme = useColorScheme()
+	const colorScheme = useResolvedColorScheme()
 	return colorScheme === "dark" ? Colors.dark : Colors.light
 }

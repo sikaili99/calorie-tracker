@@ -29,6 +29,7 @@ appId: com.antomanc.simplecalorietracker
     id: "goal-wizard-next"
 - tapOn:
     id: "goal-wizard-next"
-# Should now be in main app (tabs visible)
+# Wait for navigation to diary after finish
+- waitForAnimationToEnd
 - assertVisible:
     id: "tab-diary"

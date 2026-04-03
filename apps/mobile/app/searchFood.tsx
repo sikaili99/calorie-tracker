@@ -28,7 +28,7 @@ import { TabSelector } from "@/components/searchFoodPage/TabSelector"
 import { SearchBar } from "@/components/searchFoodPage/SearchBar"
 import { ThemedText } from "@/components/ThemedText"
 import { CustomPressable } from "@/components/CustomPressable"
-import { useSettings } from "@/providers/SettingsProvider"
+import { useSubscription } from "@/providers/SubscriptionProvider"
 import Ionicons from "@expo/vector-icons/Ionicons"
 
 const foodCategoryTabs = ["generic", "branded", "ai"] as const
@@ -37,7 +37,7 @@ type FoodCategoryTab = (typeof foodCategoryTabs)[number]
 export default function SearchFood() {
 	const theme = useThemeColor()
 	const { branded, generic, ai, handleSearch } = useSearchFood()
-	const { isPremium } = useSettings()
+	const { isPremium } = useSubscription()
 
 	const windowWidth = useMemo(() => Dimensions.get("window").width, [])
 
@@ -213,15 +213,22 @@ export default function SearchFood() {
 								<CustomPressable
 									borderRadius={borderRadius}
 									style={styles.unlockButton}
-									onPress={() => router.push("/paywall")}
+									onPress={() =>
+										router.push({
+											pathname: "/paywall",
+											params: {
+												featureName: "AI Food Search",
+											},
+										})
+									}
 								>
-									<ThemedText
-										type="defaultSemiBold"
-										color={theme.background}
-									>
-										Unlock Premium
-									</ThemedText>
-								</CustomPressable>
+										<ThemedText
+											type="defaultSemiBold"
+											color={theme.background}
+										>
+											Start Free Trial
+										</ThemedText>
+									</CustomPressable>
 							</View>
 						)
 					}

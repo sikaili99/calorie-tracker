@@ -66,7 +66,7 @@ export const CustomPressable = ({
 		<View style={styles.wrapper} testID={props.testID}>
 			<Pressable
 				android_ripple={{
-					color: theme.text,
+					color: `${theme.text}22`,
 				}}
 				style={pressableStyle}
 				{...props}

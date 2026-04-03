@@ -17,11 +17,22 @@ import { ThemedText } from "@/components/ThemedText"
 import { borderRadius, spacing } from "@/constants/Theme"
 import { TargetSuggestionBanner } from "@/components/TargetSuggestionBanner"
 import { LoadingState } from "@/components/LoadingState"
+import { CustomPressable } from "@/components/CustomPressable"
+import type { ThemeMode } from "@/providers/SettingsProvider"
 import Ionicons from "@expo/vector-icons/Ionicons"
 
 const ITEM_HEIGHT = 48
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const MINUTES = Array.from({ length: 60 }, (_, i) => i)
+const THEME_OPTIONS: Array<{
+	value: ThemeMode
+	label: string
+	icon: React.ComponentProps<typeof Ionicons>["name"]
+}> = [
+	{ value: "system", label: "System", icon: "phone-portrait-outline" },
+	{ value: "light", label: "Light", icon: "sunny-outline" },
+	{ value: "dark", label: "Dark", icon: "moon-outline" },
+]
 
 function TimePickerModal({
 	visible,
@@ -47,8 +58,14 @@ function TimePickerModal({
 			setHour(initialHour)
 			setMinute(initialMinute)
 			setTimeout(() => {
-				hourRef.current?.scrollToIndex({ index: initialHour, animated: false })
-				minuteRef.current?.scrollToIndex({ index: initialMinute, animated: false })
+				hourRef.current?.scrollToIndex({
+					index: initialHour,
+					animated: false,
+				})
+				minuteRef.current?.scrollToIndex({
+					index: initialMinute,
+					animated: false,
+				})
 			}, 50)
 		}
 	}, [visible, initialHour, initialMinute])
@@ -123,7 +140,10 @@ function TimePickerModal({
 			const period = item >= 12 ? "PM" : "AM"
 			const display = item % 12 === 0 ? 12 : item % 12
 			return (
-				<TouchableOpacity style={styles.item} onPress={() => setHour(item)}>
+				<TouchableOpacity
+					style={styles.item}
+					onPress={() => setHour(item)}
+				>
 					<ThemedText
 						type={selected ? "defaultSemiBold" : "default"}
 						color={selected ? theme.primary : theme.text}
@@ -140,7 +160,10 @@ function TimePickerModal({
 		({ item }: { item: number }) => {
 			const selected = item === minute
 			return (
-				<TouchableOpacity style={styles.item} onPress={() => setMinute(item)}>
+				<TouchableOpacity
+					style={styles.item}
+					onPress={() => setMinute(item)}
+				>
 					<ThemedText
 						type={selected ? "defaultSemiBold" : "default"}
 						color={selected ? theme.primary : theme.text}
@@ -153,35 +176,48 @@ function TimePickerModal({
 		[minute, theme, styles]
 	)
 
-	const onScrollHourEnd = useCallback(
-		(e: any) => {
-			const index = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT)
-			setHour(Math.min(23, Math.max(0, index)))
-		},
-		[]
-	)
+	const onScrollHourEnd = useCallback((e: any) => {
+		const index = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT)
+		setHour(Math.min(23, Math.max(0, index)))
+	}, [])
 
-	const onScrollMinuteEnd = useCallback(
-		(e: any) => {
-			const index = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT)
-			setMinute(Math.min(59, Math.max(0, index)))
-		},
-		[]
-	)
+	const onScrollMinuteEnd = useCallback((e: any) => {
+		const index = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT)
+		setMinute(Math.min(59, Math.max(0, index)))
+	}, [])
 
 	return (
-		<Modal visible={visible} transparent animationType="slide" onRequestClose={onDismiss}>
-			<TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onDismiss}>
+		<Modal
+			visible={visible}
+			transparent
+			animationType="slide"
+			onRequestClose={onDismiss}
+		>
+			<TouchableOpacity
+				style={styles.overlay}
+				activeOpacity={1}
+				onPress={onDismiss}
+			>
 				<TouchableOpacity activeOpacity={1} onPress={() => {}}>
 					<View style={styles.sheet}>
 						<View style={styles.handle} />
 						<View style={styles.header}>
 							<TouchableOpacity onPress={onDismiss} hitSlop={10}>
-								<ThemedText color={theme.primary}>Cancel</ThemedText>
+								<ThemedText color={theme.primary}>
+									Cancel
+								</ThemedText>
 							</TouchableOpacity>
-							<ThemedText type="defaultSemiBold">Reminder Time</ThemedText>
-							<TouchableOpacity onPress={() => onConfirm(hour, minute)} hitSlop={10}>
-								<ThemedText type="defaultSemiBold" color={theme.primary}>
+							<ThemedText type="defaultSemiBold">
+								Reminder Time
+							</ThemedText>
+							<TouchableOpacity
+								onPress={() => onConfirm(hour, minute)}
+								hitSlop={10}
+							>
+								<ThemedText
+									type="defaultSemiBold"
+									color={theme.primary}
+								>
 									Done
 								</ThemedText>
 							</TouchableOpacity>
@@ -212,7 +248,9 @@ function TimePickerModal({
 							</View>
 
 							<View style={styles.separator}>
-								<ThemedText type="defaultSemiBold">:</ThemedText>
+								<ThemedText type="defaultSemiBold">
+									:
+								</ThemedText>
 							</View>
 
 							{/* Minute column */}
@@ -261,6 +299,8 @@ export default function Index() {
 		updateTargetProteinPercentage,
 		updateNotificationsEnabled,
 		updateReminderTime,
+		themeMode,
+		updateThemeMode,
 	} = useSettings()
 
 	const [timePickerVisible, setTimePickerVisible] = useState(false)
@@ -338,6 +378,33 @@ export default function Index() {
 				notificationLabel: {
 					flex: 1,
 				},
+				appearanceCard: {
+					backgroundColor: theme.surface,
+					borderRadius,
+					overflow: "hidden",
+				},
+				appearanceOption: {
+					flexDirection: "row",
+					alignItems: "center",
+					justifyContent: "space-between",
+					paddingHorizontal: spacing.lg,
+					paddingVertical: 14,
+					minHeight: 52,
+					backgroundColor: theme.surface,
+				},
+				appearanceOptionSelected: {
+					backgroundColor: theme.primaryAlpha20,
+				},
+				appearanceLeft: {
+					flexDirection: "row",
+					alignItems: "center",
+					gap: spacing.sm,
+				},
+				appearanceDivider: {
+					height: StyleSheet.hairlineWidth,
+					backgroundColor: theme.onSurface,
+					marginLeft: spacing.lg,
+				},
 			}),
 		[theme]
 	)
@@ -357,7 +424,12 @@ export default function Index() {
 			targetCarbsPercentage !== undefined &&
 			targetProteinPercentage !== undefined &&
 			targetFatPercentage !== undefined,
-		[targetCalories, targetCarbsPercentage, targetProteinPercentage, targetFatPercentage]
+		[
+			targetCalories,
+			targetCarbsPercentage,
+			targetProteinPercentage,
+			targetFatPercentage,
+		]
 	)
 
 	const handleNumericChange = useCallback(
@@ -376,10 +448,18 @@ export default function Index() {
 
 	useEffect(() => {
 		if (targetCalories) setTargetCaloriesInput(targetCalories.toString())
-		if (targetProteinPercentage) setTargetProteinInput(targetProteinPercentage.toString())
-		if (targetFatPercentage) setTargetFatInput(targetFatPercentage.toString())
-		if (targetCarbsPercentage) setTargetCarbsInput(targetCarbsPercentage.toString())
-	}, [targetCalories, targetProteinPercentage, targetFatPercentage, targetCarbsPercentage])
+		if (targetProteinPercentage)
+			setTargetProteinInput(targetProteinPercentage.toString())
+		if (targetFatPercentage)
+			setTargetFatInput(targetFatPercentage.toString())
+		if (targetCarbsPercentage)
+			setTargetCarbsInput(targetCarbsPercentage.toString())
+	}, [
+		targetCalories,
+		targetProteinPercentage,
+		targetFatPercentage,
+		targetCarbsPercentage,
+	])
 
 	const totalPercentage = useMemo(
 		() =>
@@ -411,7 +491,67 @@ export default function Index() {
 				>
 					{/* Calories */}
 					<View>
-						<ThemedText type="subtitleBold" style={styles.sectionLabel}>
+						<ThemedText
+							type="subtitleBold"
+							style={styles.sectionLabel}
+						>
+							APPEARANCE
+						</ThemedText>
+						<View style={styles.appearanceCard}>
+							{THEME_OPTIONS.map((option, index) => {
+								const isSelected = themeMode === option.value
+								return (
+									<View key={option.value}>
+										<CustomPressable
+											borderRadius={borderRadius}
+											style={[
+												styles.appearanceOption,
+												isSelected &&
+													styles.appearanceOptionSelected,
+											]}
+											onPress={() =>
+												updateThemeMode(option.value)
+											}
+										>
+											<View style={styles.appearanceLeft}>
+												<Ionicons
+													name={option.icon}
+													size={18}
+													color={
+														isSelected
+															? theme.primary
+															: theme.text
+													}
+												/>
+												<ThemedText type="defaultSemiBold">
+													{option.label}
+												</ThemedText>
+											</View>
+											{isSelected && (
+												<Ionicons
+													name="checkmark-circle"
+													size={18}
+													color={theme.primary}
+												/>
+											)}
+										</CustomPressable>
+										{index < THEME_OPTIONS.length - 1 && (
+											<View
+												style={styles.appearanceDivider}
+											/>
+										)}
+									</View>
+								)
+							})}
+						</View>
+					</View>
+
+					{/* Calories */}
+					<View>
+						<ThemedText
+							type="subtitleBold"
+							style={styles.sectionLabel}
+						>
 							DAILY TARGET
 						</ThemedText>
 						<View style={styles.card}>
@@ -422,7 +562,10 @@ export default function Index() {
 								isFirst
 								isLast
 								onSubmit={() =>
-									handleNumericChange(targetCaloriesInput, updateTargetCalories)
+									handleNumericChange(
+										targetCaloriesInput,
+										updateTargetCalories
+									)
 								}
 							>
 								<CustomTextInput
@@ -435,7 +578,10 @@ export default function Index() {
 
 					{/* Macros */}
 					<View>
-						<ThemedText type="subtitleBold" style={styles.sectionLabel}>
+						<ThemedText
+							type="subtitleBold"
+							style={styles.sectionLabel}
+						>
 							MACROS
 						</ThemedText>
 						<View style={styles.card}>
@@ -445,7 +591,10 @@ export default function Index() {
 								iconName="leaf-outline"
 								isFirst
 								onSubmit={() =>
-									handleNumericChange(targetCarbsInput, updateTargetCarbsPercentage)
+									handleNumericChange(
+										targetCarbsInput,
+										updateTargetCarbsPercentage
+									)
 								}
 							>
 								<CustomTextInput
@@ -458,7 +607,10 @@ export default function Index() {
 								value={`${targetProteinPercentage ?? 0}%`}
 								iconName="barbell-outline"
 								onSubmit={() =>
-									handleNumericChange(targetProteinInput, updateTargetProteinPercentage)
+									handleNumericChange(
+										targetProteinInput,
+										updateTargetProteinPercentage
+									)
 								}
 							>
 								<CustomTextInput
@@ -472,7 +624,10 @@ export default function Index() {
 								iconName="water-outline"
 								isLast
 								onSubmit={() =>
-									handleNumericChange(targetFatInput, updateTargetFatPercentage)
+									handleNumericChange(
+										targetFatInput,
+										updateTargetFatPercentage
+									)
 								}
 							>
 								<CustomTextInput
@@ -487,26 +642,38 @@ export default function Index() {
 							<View
 								style={[
 									styles.macroSegment,
-									{ flex: targetCarbsPercentage ?? 0, backgroundColor: "#5BBEF9" },
+									{
+										flex: targetCarbsPercentage ?? 0,
+										backgroundColor: theme.macroCarbs,
+									},
 								]}
 							/>
 							<View
 								style={[
 									styles.macroSegment,
-									{ flex: targetProteinPercentage ?? 0, backgroundColor: "#22C55E" },
+									{
+										flex: targetProteinPercentage ?? 0,
+										backgroundColor: theme.macroProtein,
+									},
 								]}
 							/>
 							<View
 								style={[
 									styles.macroSegment,
-									{ flex: targetFatPercentage ?? 0, backgroundColor: "#F59E0B" },
+									{
+										flex: targetFatPercentage ?? 0,
+										backgroundColor: theme.macroFat,
+									},
 								]}
 							/>
 							{totalPercentage < 100 && (
 								<View
 									style={[
 										styles.macroSegment,
-										{ flex: 100 - totalPercentage, backgroundColor: theme.onSurface },
+										{
+											flex: 100 - totalPercentage,
+											backgroundColor: theme.onSurface,
+										},
 									]}
 								/>
 							)}
@@ -514,33 +681,70 @@ export default function Index() {
 
 						<View style={styles.macroFooter}>
 							<ThemedText type="subtitleLight">
-								<ThemedText type="subtitleBold" color="#5BBEF9">C </ThemedText>
-								<ThemedText type="subtitleLight" color="#5BBEF9">{targetCarbsPercentage ?? 0}%</ThemedText>
+								<ThemedText
+									type="subtitleBold"
+									color={theme.macroCarbs}
+								>
+									C{" "}
+								</ThemedText>
+								<ThemedText
+									type="subtitleLight"
+									color={theme.macroCarbs}
+								>
+									{targetCarbsPercentage ?? 0}%
+								</ThemedText>
 								{"   "}
-								<ThemedText type="subtitleBold" color="#22C55E">P </ThemedText>
-								<ThemedText type="subtitleLight" color="#22C55E">{targetProteinPercentage ?? 0}%</ThemedText>
+								<ThemedText
+									type="subtitleBold"
+									color={theme.macroProtein}
+								>
+									P{" "}
+								</ThemedText>
+								<ThemedText
+									type="subtitleLight"
+									color={theme.macroProtein}
+								>
+									{targetProteinPercentage ?? 0}%
+								</ThemedText>
 								{"   "}
-								<ThemedText type="subtitleBold" color="#F59E0B">F </ThemedText>
-								<ThemedText type="subtitleLight" color="#F59E0B">{targetFatPercentage ?? 0}%</ThemedText>
+								<ThemedText
+									type="subtitleBold"
+									color={theme.macroFat}
+								>
+									F{" "}
+								</ThemedText>
+								<ThemedText
+									type="subtitleLight"
+									color={theme.macroFat}
+								>
+									{targetFatPercentage ?? 0}%
+								</ThemedText>
 							</ThemedText>
 							<ThemedText
 								type="subtitleBold"
 								color={macroValid ? theme.success : theme.error}
 							>
-								{macroValid ? "✓ 100%" : `${totalPercentage}% / 100%`}
+								{macroValid
+									? "✓ 100%"
+									: `${totalPercentage}% / 100%`}
 							</ThemedText>
 						</View>
 					</View>
 
 					{/* Reminders */}
 					<View>
-						<ThemedText type="subtitleBold" style={styles.sectionLabel}>
+						<ThemedText
+							type="subtitleBold"
+							style={styles.sectionLabel}
+						>
 							REMINDERS
 						</ThemedText>
 						<View style={styles.reminderCard}>
 							<View style={styles.reminderToggleRow}>
 								<View style={styles.notificationLabel}>
-									<ThemedText type="defaultSemiBold">Daily Reminder</ThemedText>
+									<ThemedText type="defaultSemiBold">
+										Daily Reminder
+									</ThemedText>
 									<ThemedText type="subtitleLight">
 										Log your meals every day
 									</ThemedText>
@@ -548,7 +752,10 @@ export default function Index() {
 								<Switch
 									value={notificationsEnabled}
 									onValueChange={updateNotificationsEnabled}
-									trackColor={{ false: theme.onSurface, true: theme.primary }}
+									trackColor={{
+										false: theme.onSurface,
+										true: theme.primary,
+									}}
 									thumbColor={theme.surface}
 								/>
 							</View>
@@ -560,14 +767,34 @@ export default function Index() {
 									activeOpacity={0.7}
 								>
 									<View style={styles.reminderTimeLeft}>
-										<Ionicons name="time-outline" size={18} color={theme.primary} />
-										<ThemedText type="default">Reminder Time</ThemedText>
+										<Ionicons
+											name="time-outline"
+											size={18}
+											color={theme.primary}
+										/>
+										<ThemedText type="default">
+											Reminder Time
+										</ThemedText>
 									</View>
-									<View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-										<ThemedText type="subtitleBold" color={theme.primary}>
+									<View
+										style={{
+											flexDirection: "row",
+											alignItems: "center",
+											gap: 6,
+										}}
+									>
+										<ThemedText
+											type="subtitleBold"
+											color={theme.primary}
+										>
 											{reminderTimeLabel}
 										</ThemedText>
-										<Ionicons name="chevron-forward" size={16} color={theme.text} style={{ opacity: 0.3 }} />
+										<Ionicons
+											name="chevron-forward"
+											size={16}
+											color={theme.text}
+											style={{ opacity: 0.3 }}
+										/>
 									</View>
 								</TouchableOpacity>
 							)}

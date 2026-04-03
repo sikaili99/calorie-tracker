@@ -5,6 +5,7 @@ import { useThemeColor } from "@/hooks/useThemeColor"
 import { ThemedText } from "@/components/ThemedText"
 import { CustomPressable } from "@/components/CustomPressable"
 import { borderRadius } from "@/constants/Theme"
+import Ionicons from "@expo/vector-icons/Ionicons"
 
 export default function AuthChoiceScreen() {
 	const theme = useThemeColor()
@@ -13,81 +14,155 @@ export default function AuthChoiceScreen() {
 		container: {
 			flex: 1,
 			backgroundColor: theme.background,
+			padding: 24,
+			justifyContent: "space-between",
+			paddingTop: 56,
+			paddingBottom: 32,
+		},
+		headerBlock: {
+			gap: 12,
+		},
+		card: {
+			backgroundColor: theme.surface,
+			borderRadius: 16,
+			padding: 20,
+			gap: 16,
+			borderWidth: 1,
+			borderColor: theme.onSurface,
+		},
+		headerRow: {
+			flexDirection: "row",
+			alignItems: "center",
+			gap: 12,
+		},
+		iconCircle: {
+			width: 44,
+			height: 44,
+			borderRadius: 22,
+			backgroundColor: theme.primaryAlpha20,
 			alignItems: "center",
 			justifyContent: "center",
-			padding: 32,
-			gap: 12,
 		},
 		primaryButton: {
 			backgroundColor: theme.primary,
 			paddingVertical: 16,
-			paddingHorizontal: 32,
 			borderRadius,
 			alignItems: "center",
-			width: "100%",
+			minHeight: 52,
 		},
 		secondaryButton: {
-			backgroundColor: theme.surface,
+			backgroundColor: theme.background,
 			paddingVertical: 16,
-			paddingHorizontal: 32,
 			borderRadius,
 			alignItems: "center",
-			width: "100%",
+			borderWidth: 1,
+			borderColor: theme.onSurface,
+			minHeight: 52,
 		},
-		linkButton: {
+		bulletRow: {
+			flexDirection: "row",
+			alignItems: "center",
+			gap: 8,
+		},
+		guestButton: {
 			paddingVertical: 12,
 			alignItems: "center",
-			width: "100%",
 		},
-		divider: {
-			height: 1,
-			backgroundColor: theme.surface,
-			width: "100%",
+		subtleDivider: {
+			height: StyleSheet.hairlineWidth,
+			backgroundColor: theme.onSurface,
 			marginVertical: 4,
 		},
 	})
 
 	return (
 		<View style={styles.container}>
-			<ThemedText type="title" centered>
-				Welcome
-			</ThemedText>
-			<ThemedText type="subtitleLight" centered style={{ marginBottom: 16 }}>
-				How would you like to continue?
-			</ThemedText>
-
-			<CustomPressable
-				borderRadius={borderRadius}
-				style={styles.primaryButton}
-				onPress={() => router.push("/(onboarding)/register")}
-				testID="auth-choice-create-account"
-			>
-				<ThemedText type="defaultSemiBold" color={theme.background}>
-					Create Account
+			<View style={styles.headerBlock}>
+				<ThemedText type="title">Let&apos;s get you set up</ThemedText>
+				<ThemedText type="subtitleLight">
+					Create an account to sync across devices, or continue as
+					guest and set it up later.
 				</ThemedText>
-			</CustomPressable>
+			</View>
 
-			<CustomPressable
-				borderRadius={borderRadius}
-				style={styles.secondaryButton}
-				onPress={() => router.push("/(onboarding)/goal-wizard")}
-				testID="auth-choice-guest"
-			>
-				<ThemedText type="defaultSemiBold">Continue as Guest</ThemedText>
-			</CustomPressable>
+			<View style={{ gap: 16 }}>
+				<View style={styles.card}>
+					<View style={styles.headerRow}>
+						<View style={styles.iconCircle}>
+							<Ionicons
+								name="sparkles-outline"
+								size={20}
+								color={theme.primary}
+							/>
+						</View>
+						<View style={{ flex: 1 }}>
+							<ThemedText type="defaultSemiBold">
+								Start your personalized plan
+							</ThemedText>
+							<ThemedText type="subtitleLight">
+								Choose how you want to continue
+							</ThemedText>
+						</View>
+					</View>
 
-			<View style={styles.divider} />
+					<View style={styles.bulletRow}>
+						<Ionicons
+							name="checkmark-circle"
+							size={16}
+							color={theme.primary}
+						/>
+						<ThemedText type="subtitleLight">
+							Sync your diary and preferences
+						</ThemedText>
+					</View>
+					<View style={styles.bulletRow}>
+						<Ionicons
+							name="checkmark-circle"
+							size={16}
+							color={theme.primary}
+						/>
+						<ThemedText type="subtitleLight">
+							Get AI guidance with your saved data
+						</ThemedText>
+					</View>
 
-			<CustomPressable
-				borderRadius={borderRadius}
-				style={styles.linkButton}
-				onPress={() => router.push("/(onboarding)/login")}
-				testID="auth-choice-signin"
-			>
-				<ThemedText type="subtitleLight" color={theme.primary}>
-					Already have an account? Sign In
-				</ThemedText>
-			</CustomPressable>
+					<CustomPressable
+						borderRadius={borderRadius}
+						style={styles.primaryButton}
+						onPress={() => router.push("/(onboarding)/register")}
+						testID="auth-choice-create-account"
+					>
+						<ThemedText
+							type="defaultSemiBold"
+							color={theme.background}
+						>
+							Create Account
+						</ThemedText>
+					</CustomPressable>
+
+					<CustomPressable
+						borderRadius={borderRadius}
+						style={styles.secondaryButton}
+						onPress={() => router.push("/(onboarding)/login")}
+						testID="auth-choice-signin"
+					>
+						<ThemedText type="defaultSemiBold">Sign In</ThemedText>
+					</CustomPressable>
+
+					<View style={styles.subtleDivider} />
+
+					<CustomPressable
+						borderRadius={borderRadius}
+						style={styles.guestButton}
+						onPress={() => router.push("/(onboarding)/goal-wizard")}
+						testID="auth-choice-guest"
+					>
+						<ThemedText type="subtitleLight" color={theme.primary}>
+							Continue as Guest
+						</ThemedText>
+					</CustomPressable>
+				</View>
+			</View>
 		</View>
 	)
 }

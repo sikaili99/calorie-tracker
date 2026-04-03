@@ -1,12 +1,17 @@
-import React, { useState } from "react"
+import React, { useMemo, useState } from "react"
 import { Alert, ScrollView, StyleSheet, View } from "react-native"
 import { router, useLocalSearchParams } from "expo-router"
 import Ionicons from "@expo/vector-icons/Ionicons"
+import Purchases from "react-native-purchases"
 import { ThemedText } from "@/components/ThemedText"
 import { CustomPressable } from "@/components/CustomPressable"
 import { PrimaryButton } from "@/components/PrimaryButton"
 import { useThemeColor } from "@/hooks/useThemeColor"
-import { useSettings } from "@/providers/SettingsProvider"
+import {
+	BillingPlan,
+	useSubscription,
+} from "@/providers/SubscriptionProvider"
+import { useAuth } from "@/providers/AuthProvider"
 import { borderRadius } from "@/constants/Theme"
 
 const FEATURES = [
@@ -15,24 +20,50 @@ const FEATURES = [
 	"AI Food Search — describe meals in plain language",
 ]
 
-const PRICING = [
-	{ label: "Monthly", price: "$4.99 / month" },
-	{ label: "Annual", price: "$29.99 / year", badge: "Save 50%" },
-] as const
-
-type PlanLabel = (typeof PRICING)[number]["label"]
+const PRICING_FALLBACK: Record<BillingPlan, string> = {
+	Monthly: "$4.99 / month",
+	Annual: "$29.99 / year",
+}
 
 export default function PaywallScreen() {
 	const theme = useThemeColor()
-	const { updateIsPremium } = useSettings()
+	const { isAuthenticated } = useAuth()
+	const {
+		isSubscriptionReady,
+		isSubscriptionConfigured,
+		monthlyPackage,
+		annualPackage,
+		getPackageByPlan,
+		purchase,
+		restore,
+		refresh,
+	} = useSubscription()
 	const { featureName } = useLocalSearchParams<{ featureName?: string }>()
 	const [isStartingTrial, setIsStartingTrial] = useState(false)
-	const recommendedPlan: PlanLabel = "Annual"
-	const [selectedPlan, setSelectedPlan] = useState<PlanLabel>(recommendedPlan)
+	const [isRestoringPurchase, setIsRestoringPurchase] = useState(false)
+	const recommendedPlan: BillingPlan = "Annual"
+	const [selectedPlan, setSelectedPlan] =
+		useState<BillingPlan>(recommendedPlan)
 
-	const selectedPlanDetails = PRICING.find(
-		(plan) => plan.label === selectedPlan
-	)!
+	const pricesByPlan = useMemo(
+		() => ({
+			Monthly: monthlyPackage?.product.priceString ?? PRICING_FALLBACK.Monthly,
+			Annual: annualPackage?.product.priceString ?? PRICING_FALLBACK.Annual,
+		}),
+		[monthlyPackage, annualPackage]
+	)
+
+	const selectedPlanPackage = getPackageByPlan(selectedPlan)
+	const selectedPlanPrice = pricesByPlan[selectedPlan]
+	const selectedPlanCta =
+		selectedPlan === "Annual"
+			? "Start Free Trial — Annual"
+			: "Subscribe — Monthly"
+
+	const loginReturnTo =
+		featureName && featureName.trim().length > 0
+			? `/paywall?featureName=${encodeURIComponent(featureName)}`
+			: "/paywall"
 
 	const styles = StyleSheet.create({
 		container: {
@@ -123,23 +154,94 @@ export default function PaywallScreen() {
 		},
 	})
 
+	const navigateToLoginForPurchase = () => {
+		Alert.alert(
+			"Sign In Required",
+			"Create or sign in to an account before purchasing premium."
+		)
+		router.push({
+			pathname: "/(onboarding)/login",
+			params: { returnTo: loginReturnTo },
+		})
+	}
+
 	const handleStartTrial = async () => {
 		if (isStartingTrial) return
+
+		if (!isSubscriptionConfigured) {
+			Alert.alert(
+				"Billing Not Configured",
+				"RevenueCat keys are missing for this build."
+			)
+			return
+		}
+
+		if (!isAuthenticated) {
+			navigateToLoginForPurchase()
+			return
+		}
+
+		if (!selectedPlanPackage) {
+			await refresh().catch(() => undefined)
+			Alert.alert(
+				"Plans Unavailable",
+				"We could not load subscription plans. Please try again."
+			)
+			return
+		}
+
 		setIsStartingTrial(true)
 		try {
-			// Local unlock scope for now (no store billing integration in this pass).
-			await updateIsPremium(true)
+			await purchase(selectedPlanPackage)
 			router.back()
+		} catch (error: any) {
+			if (
+				error?.code ===
+				Purchases.PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR
+			) {
+				return
+			}
+			Alert.alert(
+				"Purchase Failed",
+				error?.message ??
+					"We couldn't complete your purchase. Please try again."
+			)
 		} finally {
 			setIsStartingTrial(false)
 		}
 	}
 
-	const handleRestorePurchase = () => {
-		Alert.alert(
-			"Restore Coming Soon",
-			"Restore purchase will be available once store billing is integrated."
-		)
+	const handleRestorePurchase = async () => {
+		if (isRestoringPurchase) return
+
+		if (!isSubscriptionConfigured) {
+			Alert.alert(
+				"Billing Not Configured",
+				"RevenueCat keys are missing for this build."
+			)
+			return
+		}
+
+		if (!isAuthenticated) {
+			navigateToLoginForPurchase()
+			return
+		}
+
+		setIsRestoringPurchase(true)
+		try {
+			await restore()
+			Alert.alert(
+				"Restore Complete",
+				"Your available purchases have been restored."
+			)
+		} catch (error: any) {
+			Alert.alert(
+				"Restore Failed",
+				error?.message ?? "Could not restore purchases right now."
+			)
+		} finally {
+			setIsRestoringPurchase(false)
+		}
 	}
 
 	return (
@@ -186,13 +288,13 @@ export default function PaywallScreen() {
 				</View>
 
 				<View style={{ gap: 10 }}>
-					{PRICING.map((plan) => {
-						const isRecommended = plan.label === recommendedPlan
-						const isSelected = plan.label === selectedPlan
+					{(["Monthly", "Annual"] as BillingPlan[]).map((plan) => {
+						const isRecommended = plan === recommendedPlan
+						const isSelected = plan === selectedPlan
 
 						return (
 							<CustomPressable
-								key={plan.label}
+								key={plan}
 								borderRadius={borderRadius}
 								style={[
 									styles.pricingCard,
@@ -200,18 +302,18 @@ export default function PaywallScreen() {
 										styles.pricingCardRecommended,
 									isSelected && styles.pricingCardSelected,
 								]}
-								onPress={() => setSelectedPlan(plan.label)}
-								testID={`plan-${plan.label.toLowerCase()}`}
+								onPress={() => setSelectedPlan(plan)}
+								testID={`plan-${plan.toLowerCase()}`}
 							>
 								<View>
 									<ThemedText type="defaultSemiBold">
-										{plan.label}
+										{plan}
 									</ThemedText>
 									<ThemedText
 										type="subtitleLight"
 										style={styles.valueText}
 									>
-										{plan.price}
+										{pricesByPlan[plan]}
 									</ThemedText>
 								</View>
 
@@ -227,7 +329,7 @@ export default function PaywallScreen() {
 												type="subtitleLight"
 												color={theme.primary}
 											>
-												{plan.badge ?? "Best Value"}
+												Save 50%
 											</ThemedText>
 										</View>
 									)}
@@ -253,25 +355,31 @@ export default function PaywallScreen() {
 				</View>
 
 				<PrimaryButton
-					label={`Start Free Trial — ${selectedPlan}`}
+					label={selectedPlanCta}
 					onPress={handleStartTrial}
-					isLoading={isStartingTrial}
+					isLoading={isStartingTrial || !isSubscriptionReady}
+					disabled={!isSubscriptionReady}
 				/>
 				<ThemedText
 					type="subtitleLight"
 					centered
 					style={styles.ctaSubtext}
 				>
-					Selected plan after trial: {selectedPlanDetails.price}
+					{selectedPlan === "Annual"
+						? `After trial: ${selectedPlanPrice}`
+						: `Billed immediately: ${selectedPlanPrice}`}
 				</ThemedText>
 
 				<CustomPressable
 					borderRadius={borderRadius}
 					style={styles.restoreButton}
 					onPress={handleRestorePurchase}
+					disabled={isRestoringPurchase}
 				>
 					<ThemedText type="subtitleLight" color={theme.primary}>
-						Restore Purchase
+						{isRestoringPurchase
+							? "Restoring…"
+							: "Restore Purchase"}
 					</ThemedText>
 				</CustomPressable>
 
@@ -280,7 +388,7 @@ export default function PaywallScreen() {
 					centered
 					style={{ opacity: 0.6, fontSize: 11 }}
 				>
-					Local trial mode. Store billing integration is coming soon.
+					Billed securely through Apple App Store or Google Play.
 				</ThemedText>
 			</ScrollView>
 		</View>

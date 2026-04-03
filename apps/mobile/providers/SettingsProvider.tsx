@@ -14,6 +14,8 @@ import {
 } from "@/utils/notifications"
 import { ActivityLevel, GoalType } from "@/utils/tdee"
 
+export type ThemeMode = "system" | "light" | "dark"
+
 export interface UserProfile {
 	userName?: string
 	userAge?: number
@@ -41,7 +43,7 @@ interface SettingsContextProps {
 	userHeightCm: number | undefined
 	activityLevel: ActivityLevel | undefined
 	goalType: GoalType | undefined
-	isPremium: boolean
+	themeMode: ThemeMode
 	updateTargetCalories: (value: number) => void
 	updateTargetCarbsPercentage: (value: number) => void
 	updateTargetProteinPercentage: (value: number) => void
@@ -50,8 +52,8 @@ interface SettingsContextProps {
 	updateNotificationsEnabled: (value: boolean) => void
 	updateReminderTime: (hour: number, minute: number) => void
 	updateOnboardingComplete: (value: boolean) => Promise<void>
-	updateIsPremium: (value: boolean) => Promise<void>
 	updateUserProfile: (profile: UserProfile) => Promise<void>
+	updateThemeMode: (value: ThemeMode) => Promise<void>
 }
 
 const SettingsContext = createContext<SettingsContextProps | undefined>(
@@ -79,7 +81,7 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 		userHeightCm: number | undefined
 		activityLevel: ActivityLevel | undefined
 		goalType: GoalType | undefined
-		isPremium: boolean
+		themeMode: ThemeMode
 	}>({
 		targetCalories: undefined,
 		targetCarbsPercentage: undefined,
@@ -98,7 +100,7 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 		userHeightCm: undefined,
 		activityLevel: undefined,
 		goalType: undefined,
-		isPremium: false,
+		themeMode: "system",
 	})
 
 	const getStoredSetting = useCallback(
@@ -111,7 +113,9 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 			} catch {
 				if (typeof defaultValue === "number") {
 					const parsed = Number(stored)
-					return (Number.isFinite(parsed) ? parsed : defaultValue) as T
+					return (
+						Number.isFinite(parsed) ? parsed : defaultValue
+					) as T
 				}
 				if (typeof defaultValue === "boolean") {
 					if (stored === "1" || stored.toLowerCase() === "true")
@@ -161,7 +165,10 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 				let userUuid = await getStoredSetting("USER_UUID", "")
 				if (!userUuid) {
 					const uuid = Crypto.randomUUID()
-					await AsyncStorage.setItem("USER_UUID", JSON.stringify(uuid))
+					await AsyncStorage.setItem(
+						"USER_UUID",
+						JSON.stringify(uuid)
+					)
 					userUuid = uuid
 				}
 				const notificationsEnabledRaw = await getStoredSetting<
@@ -177,11 +184,6 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 					"ONBOARDING_COMPLETE",
 					false
 				)
-				const isPremiumRaw = await getStoredSetting<boolean | number>(
-					"IS_PREMIUM",
-					false
-				)
-				const isPremium = Boolean(isPremiumRaw)
 				const userName = await getStoredSetting<string | undefined>(
 					"USER_NAME",
 					undefined
@@ -205,6 +207,18 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 					"GOAL_TYPE",
 					undefined
 				)
+				const themeModeStored = await getStoredSetting<ThemeMode>(
+					"THEME_MODE",
+					"system"
+				)
+				const themeMode: ThemeMode = [
+					"system",
+					"light",
+					"dark",
+				].includes(themeModeStored)
+					? themeModeStored
+					: "system"
+				await AsyncStorage.removeItem("IS_PREMIUM")
 				setSettings({
 					targetCalories,
 					targetCarbsPercentage,
@@ -223,10 +237,13 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 					userHeightCm,
 					activityLevel,
 					goalType,
-					isPremium,
+					themeMode,
 				})
 			} catch (error) {
-				console.warn("[SettingsProvider] Failed to load settings", error)
+				console.warn(
+					"[SettingsProvider] Failed to load settings",
+					error
+				)
 				setSettings((prev) => ({ ...prev, settingsLoaded: true }))
 			}
 		}
@@ -271,50 +288,33 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 		[settings.notificationsEnabled]
 	)
 
-	const updateOnboardingComplete = useCallback(
-		async (value: boolean) => {
-			await AsyncStorage.setItem(
-				"ONBOARDING_COMPLETE",
-				JSON.stringify(value)
-			)
-			setSettings((prev) => ({ ...prev, onboardingComplete: value }))
-		},
-		[]
-	)
+	const updateOnboardingComplete = useCallback(async (value: boolean) => {
+		await AsyncStorage.setItem("ONBOARDING_COMPLETE", JSON.stringify(value))
+		setSettings((prev) => ({ ...prev, onboardingComplete: value }))
+	}, [])
 
-	const updateIsPremium = useCallback(async (value: boolean) => {
-		await AsyncStorage.setItem("IS_PREMIUM", JSON.stringify(value))
-		setSettings((prev) => ({ ...prev, isPremium: value }))
+	const updateThemeMode = useCallback(async (value: ThemeMode) => {
+		await AsyncStorage.setItem("THEME_MODE", JSON.stringify(value))
+		setSettings((prev) => ({ ...prev, themeMode: value }))
 	}, [])
 
 	const updateUserProfile = useCallback(async (profile: UserProfile) => {
-		const entries: [string, string, keyof typeof settings][] = [
-			["USER_NAME", JSON.stringify(profile.userName), "userName"],
-			["USER_AGE", JSON.stringify(profile.userAge), "userAge"],
-			[
-				"USER_WEIGHT_KG",
-				JSON.stringify(profile.userWeightKg),
-				"userWeightKg",
-			],
-			[
-				"USER_HEIGHT_CM",
-				JSON.stringify(profile.userHeightCm),
-				"userHeightCm",
-			],
-			[
-				"ACTIVITY_LEVEL",
-				JSON.stringify(profile.activityLevel),
-				"activityLevel",
-			],
-			["GOAL_TYPE", JSON.stringify(profile.goalType), "goalType"],
-		].filter(([, v]) => v !== "undefined") as [
-			string,
-			string,
-			keyof typeof settings,
-		][]
+		const entries: [string, unknown][] = [
+			["USER_NAME", profile.userName],
+			["USER_AGE", profile.userAge],
+			["USER_WEIGHT_KG", profile.userWeightKg],
+			["USER_HEIGHT_CM", profile.userHeightCm],
+			["ACTIVITY_LEVEL", profile.activityLevel],
+			["GOAL_TYPE", profile.goalType],
+		]
 
 		await Promise.all(
-			entries.map(([key, value]) => AsyncStorage.setItem(key, value))
+			entries.map(([key, value]) => {
+				if (value === undefined) {
+					return AsyncStorage.removeItem(key)
+				}
+				return AsyncStorage.setItem(key, JSON.stringify(value))
+			})
 		)
 		setSettings((prev) => ({ ...prev, ...profile }))
 	}, [])
@@ -347,8 +347,8 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 			updateNotificationsEnabled,
 			updateReminderTime,
 			updateOnboardingComplete,
-			updateIsPremium,
 			updateUserProfile,
+			updateThemeMode,
 		}),
 		[
 			settings,
@@ -356,8 +356,8 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 			updateNotificationsEnabled,
 			updateReminderTime,
 			updateOnboardingComplete,
-			updateIsPremium,
 			updateUserProfile,
+			updateThemeMode,
 		]
 	)
 

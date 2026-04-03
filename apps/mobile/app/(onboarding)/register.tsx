@@ -7,24 +7,33 @@ import {
 	Platform,
 	ScrollView,
 } from "react-native"
-import { router } from "expo-router"
+import { router, useLocalSearchParams } from "expo-router"
 import { useThemeColor } from "@/hooks/useThemeColor"
 import { ThemedText } from "@/components/ThemedText"
 import { CustomPressable } from "@/components/CustomPressable"
 import { useAuth } from "@/providers/AuthProvider"
+import { useSettings } from "@/providers/SettingsProvider"
 import { useDiarySync } from "@/hooks/useDiarySync"
 import { borderRadius } from "@/constants/Theme"
+import Ionicons from "@expo/vector-icons/Ionicons"
 
 export default function RegisterScreen() {
 	const theme = useThemeColor()
-	const { register } = useAuth()
+	const { register, loginWithGoogle } = useAuth()
+	const { updateOnboardingComplete } = useSettings()
 	const { pushPending } = useDiarySync()
+	const { returnTo } = useLocalSearchParams<{ returnTo?: string }>()
+	const returnToPath =
+		typeof returnTo === "string" && returnTo.trim().length > 0
+			? returnTo
+			: undefined
 	const [firstName, setFirstName] = useState("")
 	const [lastName, setLastName] = useState("")
 	const [email, setEmail] = useState("")
 	const [password, setPassword] = useState("")
 	const [error, setError] = useState<string | null>(null)
 	const [isLoading, setIsLoading] = useState(false)
+	const [isGoogleLoading, setIsGoogleLoading] = useState(false)
 
 	const styles = StyleSheet.create({
 		container: {
@@ -33,9 +42,37 @@ export default function RegisterScreen() {
 		},
 		inner: {
 			flexGrow: 1,
-			padding: 32,
-			justifyContent: "center",
+			padding: 24,
+			justifyContent: "space-between",
+			paddingTop: 44,
+			paddingBottom: 24,
+			gap: 16,
+		},
+		headerBlock: {
+			gap: 10,
+		},
+		titleRow: {
+			flexDirection: "row",
+			alignItems: "center",
 			gap: 12,
+		},
+		iconCircle: {
+			width: 58,
+			height: 58,
+			borderRadius: 29,
+			backgroundColor: theme.primaryAlpha20,
+			borderWidth: 1,
+			borderColor: theme.primaryAlpha33,
+			alignItems: "center",
+			justifyContent: "center",
+		},
+		formCard: {
+			backgroundColor: theme.surface,
+			borderRadius: 16,
+			padding: 18,
+			gap: 14,
+			borderWidth: 1,
+			borderColor: theme.onSurface,
 		},
 		nameRow: {
 			flexDirection: "row",
@@ -43,30 +80,66 @@ export default function RegisterScreen() {
 		},
 		nameInput: {
 			flex: 1,
-			backgroundColor: theme.surface,
+			backgroundColor: theme.background,
 			borderRadius,
 			paddingHorizontal: 16,
 			paddingVertical: 14,
 			color: theme.text,
 			fontSize: 16,
+			borderWidth: 1,
+			borderColor: theme.onSurface,
 		},
 		input: {
-			backgroundColor: theme.surface,
+			backgroundColor: theme.background,
 			borderRadius,
 			paddingHorizontal: 16,
 			paddingVertical: 14,
 			color: theme.text,
 			fontSize: 16,
+			borderWidth: 1,
+			borderColor: theme.onSurface,
 		},
 		primaryButton: {
 			backgroundColor: theme.primary,
 			paddingVertical: 16,
 			borderRadius,
 			alignItems: "center",
-			marginTop: 8,
+			minHeight: 52,
+		},
+		googleButton: {
+			backgroundColor: theme.background,
+			paddingVertical: 16,
+			borderRadius,
+			alignItems: "center",
+			flexDirection: "row",
+			justifyContent: "center",
+			gap: 10,
+			borderWidth: 1,
+			borderColor: theme.onSurface,
+			minHeight: 52,
+		},
+		dividerRow: {
+			flexDirection: "row",
+			alignItems: "center",
+			gap: 12,
+			marginVertical: 2,
+		},
+		dividerLine: {
+			flex: 1,
+			height: StyleSheet.hairlineWidth,
+			backgroundColor: theme.onSurface,
+		},
+		errorBox: {
+			backgroundColor: theme.errorSurface,
+			paddingHorizontal: 12,
+			paddingVertical: 10,
+			borderRadius,
+			flexDirection: "row",
+			alignItems: "center",
+			gap: 8,
 		},
 		linkButton: {
-			paddingVertical: 12,
+			paddingVertical: 10,
 			alignItems: "center",
 		},
 	})
@@ -84,14 +157,48 @@ export default function RegisterScreen() {
 		setIsLoading(true)
 		setError(null)
 		try {
-			await register(firstName.trim(), lastName.trim(), email.trim(), password)
+			await register(
+				firstName.trim(),
+				lastName.trim(),
+				email.trim(),
+				password
+			)
 			// push any entries logged before registering
 			pushPending().catch(() => {})
+			if (returnToPath) {
+				await updateOnboardingComplete(true)
+				router.replace(returnToPath)
+				return
+			}
 			router.push("/(onboarding)/goal-wizard")
 		} catch (e: any) {
-			setError(e?.response?.data?.message ?? "Registration failed. Please try again.")
+			setError(
+				e?.response?.data?.message ??
+					"Registration failed. Please try again."
+			)
 		} finally {
 			setIsLoading(false)
+		}
+	}
+
+	const handleGoogleRegister = async () => {
+		setIsGoogleLoading(true)
+		setError(null)
+		try {
+			await loginWithGoogle()
+			pushPending().catch(() => {})
+			if (returnToPath) {
+				await updateOnboardingComplete(true)
+				router.replace(returnToPath)
+				return
+			}
+			router.push("/(onboarding)/goal-wizard")
+		} catch (e: any) {
+			if (e?.message !== "Dismissed") {
+				setError("Google sign-in failed. Please try again.")
+			}
+		} finally {
+			setIsGoogleLoading(false)
 		}
 	}
 
@@ -100,75 +207,148 @@ export default function RegisterScreen() {
 			style={styles.container}
 			behavior={Platform.OS === "ios" ? "padding" : "height"}
 		>
-			<ScrollView contentContainerStyle={styles.inner}>
-				<ThemedText type="title">Create Account</ThemedText>
-				<ThemedText type="subtitleLight" style={{ marginBottom: 8 }}>
-					Set up your account to sync your data.
-				</ThemedText>
-
-				<View style={styles.nameRow}>
-					<TextInput
-						style={styles.nameInput}
-						placeholder="First name"
-						placeholderTextColor={theme.text + "80"}
-						value={firstName}
-						onChangeText={setFirstName}
-						autoCapitalize="words"
-						testID="register-first-name"
-					/>
-					<TextInput
-						style={styles.nameInput}
-						placeholder="Last name"
-						placeholderTextColor={theme.text + "80"}
-						value={lastName}
-						onChangeText={setLastName}
-						autoCapitalize="words"
-						testID="register-last-name"
-					/>
+			<ScrollView
+				contentContainerStyle={styles.inner}
+				keyboardShouldPersistTaps="handled"
+			>
+				<View style={styles.headerBlock}>
+					<View style={styles.titleRow}>
+						<View style={styles.iconCircle}>
+							<Ionicons
+								name="person-add-outline"
+								size={30}
+								color={theme.primary}
+							/>
+						</View>
+						<View style={{ flex: 1 }}>
+							<ThemedText type="title">Create Account</ThemedText>
+							<ThemedText type="subtitleLight">
+								{returnToPath
+									? "Create an account to continue premium checkout."
+									: "Save your progress and sync your nutrition data."}
+							</ThemedText>
+						</View>
+					</View>
+					<ThemedText type="subtitleLight">
+						{returnToPath
+							? "Premium purchases are tied to your account for restore across devices."
+							: "You can still continue as guest later if needed."}
+					</ThemedText>
 				</View>
 
-				<TextInput
-					style={styles.input}
-					placeholder="Email"
-					placeholderTextColor={theme.text + "80"}
-					value={email}
-					onChangeText={setEmail}
-					keyboardType="email-address"
-					autoCapitalize="none"
-					testID="register-email"
-				/>
-				<TextInput
-					style={styles.input}
-					placeholder="Password"
-					placeholderTextColor={theme.text + "80"}
-					value={password}
-					onChangeText={setPassword}
-					secureTextEntry
-					testID="register-password"
-				/>
+				<View style={styles.formCard}>
+					<View style={styles.nameRow}>
+						<TextInput
+							style={styles.nameInput}
+							placeholder="First name"
+							placeholderTextColor={theme.text + "80"}
+							value={firstName}
+							onChangeText={setFirstName}
+							autoCapitalize="words"
+							testID="register-first-name"
+						/>
+						<TextInput
+							style={styles.nameInput}
+							placeholder="Last name"
+							placeholderTextColor={theme.text + "80"}
+							value={lastName}
+							onChangeText={setLastName}
+							autoCapitalize="words"
+							testID="register-last-name"
+						/>
+					</View>
 
-				{error && (
-					<ThemedText type="subtitleLight" color={theme.error}>
-						{error}
-					</ThemedText>
-				)}
+					<TextInput
+						style={styles.input}
+						placeholder="Email"
+						placeholderTextColor={theme.text + "80"}
+						value={email}
+						onChangeText={setEmail}
+						keyboardType="email-address"
+						autoCapitalize="none"
+						testID="register-email"
+					/>
+					<TextInput
+						style={styles.input}
+						placeholder="Password"
+						placeholderTextColor={theme.text + "80"}
+						value={password}
+						onChangeText={setPassword}
+						secureTextEntry
+						testID="register-password"
+					/>
 
-				<CustomPressable
-					borderRadius={borderRadius}
-					style={styles.primaryButton}
-					onPress={handleSubmit}
-					disabled={isLoading}
-					testID="register-submit"
-				>
-					<ThemedText type="defaultSemiBold" color={theme.background}>
-						{isLoading ? "Creating…" : "Create Account"}
-					</ThemedText>
-				</CustomPressable>
+					{error && (
+						<View style={styles.errorBox}>
+							<Ionicons
+								name="alert-circle-outline"
+								size={16}
+								color={theme.error}
+							/>
+							<ThemedText
+								type="subtitleLight"
+								color={theme.error}
+								style={{ flex: 1 }}
+							>
+								{error}
+							</ThemedText>
+						</View>
+					)}
+
+					<CustomPressable
+						borderRadius={borderRadius}
+						style={styles.primaryButton}
+						onPress={handleSubmit}
+						disabled={isLoading || isGoogleLoading}
+						testID="register-submit"
+					>
+						<ThemedText
+							type="defaultSemiBold"
+							color={theme.background}
+						>
+							{isLoading ? "Creating…" : "Create Account"}
+						</ThemedText>
+					</CustomPressable>
+
+					<View style={styles.dividerRow}>
+						<View style={styles.dividerLine} />
+						<ThemedText type="subtitleLight">or</ThemedText>
+						<View style={styles.dividerLine} />
+					</View>
+
+					<CustomPressable
+						borderRadius={borderRadius}
+						style={styles.googleButton}
+						onPress={handleGoogleRegister}
+						disabled={isLoading || isGoogleLoading}
+						testID="register-google"
+					>
+						<Ionicons
+							name="logo-google"
+							size={20}
+							color={theme.text}
+						/>
+						<ThemedText type="defaultSemiBold">
+							{isGoogleLoading
+								? "Starting…"
+								: "Continue with Google"}
+						</ThemedText>
+					</CustomPressable>
+				</View>
 
 				<CustomPressable
 					borderRadius={borderRadius}
 					style={styles.linkButton}
-					onPress={() => router.replace("/(onboarding)/login")}
+					onPress={() => {
+						if (returnToPath) {
+							router.replace({
+								pathname: "/(onboarding)/login",
+								params: { returnTo: returnToPath },
+							})
+							return
+						}
+						router.replace("/(onboarding)/login")
+					}}
 				>
 					<ThemedText type="subtitleLight" color={theme.primary}>
 						Already have an account? Sign In

@@ -19,19 +19,22 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
 				row: {
 					flexDirection: "row",
 					justifyContent: isUser ? "flex-end" : "flex-start",
-					marginVertical: 4,
+					marginVertical: 6,
 					paddingHorizontal: 16,
 				},
 				bubble: {
-					maxWidth: "80%",
-					borderRadius,
-					padding: 12,
+					maxWidth: "82%",
+					borderRadius: 14,
+					paddingHorizontal: 12,
+					paddingVertical: 10,
 					backgroundColor: isUser ? theme.primary : theme.surface,
+					borderWidth: isUser ? 0 : 1,
+					borderColor: isUser ? "transparent" : theme.onSurface,
 				},
 				text: {
 					color: isUser ? theme.background : theme.text,
-					fontSize: 15,
-					lineHeight: 22,
+					fontSize: 14,
+					lineHeight: 21,
 				},
 			}),
 		[theme, isUser]

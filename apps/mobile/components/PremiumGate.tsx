@@ -13,7 +13,11 @@ type PremiumGateProps = {
 	style?: ViewStyle
 }
 
-export const PremiumGate = ({ title, description, style }: PremiumGateProps) => {
+export const PremiumGate = ({
+	title,
+	description,
+	style,
+}: PremiumGateProps) => {
 	const theme = useThemeColor()
 
 	const styles = useMemo(
@@ -24,7 +28,16 @@ export const PremiumGate = ({ title, description, style }: PremiumGateProps) => 
 					alignItems: "center",
 					justifyContent: "center",
 					padding: spacing.xxl,
+				},
+				card: {
+					backgroundColor: theme.surface,
+					borderRadius: 16,
+					padding: spacing.xl,
 					gap: spacing.md,
+					borderWidth: 1,
+					borderColor: theme.onSurface,
+					width: "100%",
+					maxWidth: 420,
 				},
 				iconCircle: {
 					width: 80,
@@ -34,32 +47,67 @@ export const PremiumGate = ({ title, description, style }: PremiumGateProps) => 
 					alignItems: "center",
 					justifyContent: "center",
 					marginBottom: spacing.sm,
+					alignSelf: "center",
+				},
+				bulletRow: {
+					flexDirection: "row",
+					alignItems: "center",
+					gap: spacing.sm,
 				},
 				button: {
 					marginTop: spacing.sm,
-					paddingHorizontal: spacing.xl,
-					alignSelf: "stretch",
 				},
 			}),
-		[theme.primaryAlpha20]
+		[theme.primaryAlpha20, theme.surface, theme.onSurface]
 	)
 
 	return (
 		<View style={[styles.container, style]}>
-			<View style={styles.iconCircle}>
-				<Ionicons name="lock-closed-outline" size={36} color={theme.primary} />
+			<View style={styles.card}>
+				<View style={styles.iconCircle}>
+					<Ionicons
+						name="lock-closed-outline"
+						size={36}
+						color={theme.primary}
+					/>
+				</View>
+				<ThemedText type="defaultSemiBold" centered>
+					{title}
+				</ThemedText>
+				<ThemedText type="subtitleLight" centered>
+					{description}
+				</ThemedText>
+
+				<View style={styles.bulletRow}>
+					<Ionicons
+						name="checkmark-circle"
+						size={18}
+						color={theme.primary}
+					/>
+					<ThemedText type="subtitleLight">
+						7-day free trial
+					</ThemedText>
+				</View>
+				<View style={styles.bulletRow}>
+					<Ionicons
+						name="checkmark-circle"
+						size={18}
+						color={theme.primary}
+					/>
+					<ThemedText type="subtitleLight">Cancel anytime</ThemedText>
+				</View>
+
+				<PrimaryButton
+					label="Start Free Trial"
+					onPress={() =>
+						router.push({
+							pathname: "/paywall",
+							params: { featureName: title },
+						})
+					}
+					style={styles.button}
+				/>
 			</View>
-			<ThemedText type="defaultSemiBold" centered>
-				{title}
-			</ThemedText>
-			<ThemedText type="subtitleLight" centered>
-				{description}
-			</ThemedText>
-			<PrimaryButton
-				label="Unlock Premium"
-				onPress={() => router.push("/paywall")}
-				style={styles.button}
-			/>
 		</View>
 	)
 }

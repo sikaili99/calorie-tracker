@@ -5,9 +5,9 @@ import * as SplashScreen from "expo-splash-screen"
 import { StatusBar } from "expo-status-bar"
 import { useEffect } from "react"
 import * as NavigationBar from "expo-navigation-bar"
-import { useColorScheme, View } from "react-native"
+import { View } from "react-native"
 import { CustomDarkTheme, CustomLightTheme } from "@/constants/Theme"
-import { useThemeColor } from "@/hooks/useThemeColor"
+import { useResolvedColorScheme, useThemeColor } from "@/hooks/useThemeColor"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { SelectionProvider } from "@/providers/SelectionProvider"
 import * as SystemUI from "expo-system-ui"
@@ -15,12 +15,14 @@ import { DiaryProvider } from "@/providers/DatabaseProvider"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { SettingsProvider, useSettings } from "@/providers/SettingsProvider"
 import { AuthProvider } from "@/providers/AuthProvider"
+import { SubscriptionProvider } from "@/providers/SubscriptionProvider"
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync()
 
 function AppNavigator({ fontsLoaded }: { fontsLoaded: boolean }) {
 	const theme = useThemeColor()
+	const colorScheme = useResolvedColorScheme()
 	const { settingsLoaded } = useSettings()
 
 	useEffect(() => {
@@ -47,10 +49,7 @@ function AppNavigator({ fontsLoaded }: { fontsLoaded: boolean }) {
 					name="+not-found"
 					options={{ headerShown: false }}
 				/>
-				<Stack.Screen
-					name="addFood"
-					options={{ headerShown: false }}
-				/>
+				<Stack.Screen name="addFood" options={{ headerShown: false }} />
 				<Stack.Screen
 					name="foodInfo"
 					options={{ headerShown: false }}
@@ -86,17 +85,14 @@ function AppNavigator({ fontsLoaded }: { fontsLoaded: boolean }) {
 					}}
 				/>
 			</Stack>
-			<StatusBar style="auto" />
+			<StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
 		</View>
 	)
 }
 
-export default function RootLayout() {
-	const colorScheme = useColorScheme()
+function AppWithTheme({ fontsLoaded }: { fontsLoaded: boolean }) {
+	const colorScheme = useResolvedColorScheme()
 	const theme = useThemeColor()
-	const [loaded] = useFonts({
-		SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
-	})
 
 	useEffect(() => {
 		NavigationBar.setPositionAsync("relative")
@@ -107,24 +103,36 @@ export default function RootLayout() {
 		<ThemeProvider
 			value={colorScheme === "dark" ? CustomDarkTheme : CustomLightTheme}
 		>
-			<SettingsProvider>
-				<AuthProvider>
-				<GestureHandlerRootView>
-					<DiaryProvider>
-						<SelectionProvider>
-							<SafeAreaView
-								style={{
-									flex: 1,
-									backgroundColor: theme.background,
-								}}
-							>
-								<AppNavigator fontsLoaded={loaded} />
-							</SafeAreaView>
-						</SelectionProvider>
-					</DiaryProvider>
-				</GestureHandlerRootView>
-				</AuthProvider>
-			</SettingsProvider>
+			<AuthProvider>
+				<SubscriptionProvider>
+					<GestureHandlerRootView>
+						<DiaryProvider>
+							<SelectionProvider>
+								<SafeAreaView
+									style={{
+										flex: 1,
+										backgroundColor: theme.background,
+									}}
+								>
+									<AppNavigator fontsLoaded={fontsLoaded} />
+								</SafeAreaView>
+							</SelectionProvider>
+						</DiaryProvider>
+					</GestureHandlerRootView>
+				</SubscriptionProvider>
+			</AuthProvider>
 		</ThemeProvider>
+	)
+}
+
+export default function RootLayout() {
+	const [loaded] = useFonts({
+		SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
+	})
+
+	return (
+		<SettingsProvider>
+			<AppWithTheme fontsLoaded={loaded} />
+		</SettingsProvider>
 	)
 }

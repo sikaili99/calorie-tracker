@@ -9,10 +9,12 @@ import { CalendarHeatmap } from "@/components/historyPage/CalendarHeatmap"
 import { WeeklyReportCard } from "@/components/historyPage/WeeklyReportCard"
 import { ThemedText } from "@/components/ThemedText"
 import { router } from "expo-router"
+import { useSubscription } from "@/providers/SubscriptionProvider"
 
 export default function HistoryTab() {
 	const theme = useThemeColor()
-	const { targetCalories, isPremium } = useSettings()
+	const { targetCalories } = useSettings()
+	const { isPremium } = useSubscription()
 	const { dailySummaries } = useHistoricalData(35)
 	const { report, isGenerating, error, generateReport } = useWeeklyReport()
 
@@ -62,7 +64,12 @@ export default function HistoryTab() {
 						error={error}
 						onGenerate={generateReport}
 						isPremium={isPremium}
-						onPaywall={() => router.push("/paywall")}
+						onPaywall={() =>
+							router.push({
+								pathname: "/paywall",
+								params: { featureName: "Weekly AI Report" },
+							})
+						}
 					/>
 				</View>
 

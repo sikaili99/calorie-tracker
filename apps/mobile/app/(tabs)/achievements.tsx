@@ -63,15 +63,25 @@ const AchievementCard = ({
 			<View style={styles.textContainer}>
 				<ThemedText type="defaultSemiBold">{item.title}</ThemedText>
 				{item.isUnlocked ? (
-					<ThemedText type="subtitleLight">{item.description}</ThemedText>
+					<ThemedText
+						type="subtitle"
+						color={theme.text}
+						style={styles.descriptionText}
+					>
+						{item.description}
+					</ThemedText>
 				) : (
-					<ThemedText type="subtitleLight" color={theme.primary}>
+					<ThemedText
+						type="subtitle"
+						color={theme.primary}
+						style={styles.descriptionText}
+					>
 						How to unlock: {item.description}
 					</ThemedText>
 				)}
 				{item.isUnlocked && item.unlockedAt && (
 					<ThemedText
-						type="subtitleLight"
+						type="subtitle"
 						style={styles.unlockedDate}
 						color={theme.primary}
 					>
@@ -136,7 +146,8 @@ export default function AchievementsScreen() {
 					gap: 16,
 				},
 				cardLocked: {
-					opacity: 0.45,
+					borderWidth: 1,
+					borderColor: theme.onSurface,
 				},
 				iconContainer: {
 					width: 48,
@@ -152,8 +163,12 @@ export default function AchievementsScreen() {
 				textContainer: {
 					flex: 1,
 				},
-				unlockedDate: {
+				descriptionText: {
 					marginTop: 2,
+				},
+				unlockedDate: {
+					marginTop: 4,
+					opacity: 0.85,
 				},
 			}),
 		[theme]
