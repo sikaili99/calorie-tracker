@@ -7,10 +7,13 @@ import {
 	Modal,
 	TouchableOpacity,
 	FlatList,
+	Alert,
+	Linking,
 } from "react-native"
+import { router } from "expo-router"
 import { useSettings } from "@/providers/SettingsProvider"
 import { useMemo, useCallback, useState, useEffect, useRef } from "react"
-import { useThemeColor } from "@/hooks/useThemeColor"
+import { useResolvedColorScheme, useThemeColor } from "@/hooks/useThemeColor"
 import { SettingItem } from "@/components/SettingItem"
 import { CustomTextInput } from "@/components/CustomTextInput"
 import { ThemedText } from "@/components/ThemedText"
@@ -19,6 +22,12 @@ import { TargetSuggestionBanner } from "@/components/TargetSuggestionBanner"
 import { LoadingState } from "@/components/LoadingState"
 import { CustomPressable } from "@/components/CustomPressable"
 import type { ThemeMode } from "@/providers/SettingsProvider"
+import { useAuth } from "@/providers/AuthProvider"
+import {
+	PRIVACY_POLICY_URL,
+	SUPPORT_URL,
+	TERMS_URL,
+} from "@/constants/LegalConfig"
 import Ionicons from "@expo/vector-icons/Ionicons"
 
 const ITEM_HEIGHT = 48
@@ -285,6 +294,8 @@ function TimePickerModal({
 
 export default function Index() {
 	const theme = useThemeColor()
+	const colorScheme = useResolvedColorScheme()
+	const { isAuthenticated, logout, deleteAccount } = useAuth()
 	const {
 		targetCalories,
 		targetCarbsPercentage,
@@ -301,9 +312,12 @@ export default function Index() {
 		updateReminderTime,
 		themeMode,
 		updateThemeMode,
+		updateOnboardingComplete,
 	} = useSettings()
 
 	const [timePickerVisible, setTimePickerVisible] = useState(false)
+	const [isSigningOut, setIsSigningOut] = useState(false)
+	const [isDeletingAccount, setIsDeletingAccount] = useState(false)
 
 	const styles = useMemo(
 		() =>
@@ -405,6 +419,50 @@ export default function Index() {
 					backgroundColor: theme.onSurface,
 					marginLeft: spacing.lg,
 				},
+				infoCard: {
+					backgroundColor: theme.surface,
+					borderRadius,
+					overflow: "hidden",
+				},
+				infoRow: {
+					flexDirection: "row",
+					alignItems: "center",
+					justifyContent: "space-between",
+					paddingHorizontal: spacing.lg,
+					paddingVertical: 14,
+					minHeight: 52,
+					backgroundColor: theme.surface,
+				},
+				infoRowLeft: {
+					flexDirection: "row",
+					alignItems: "center",
+					gap: spacing.sm,
+					flex: 1,
+				},
+				infoRowText: {
+					flex: 1,
+				},
+				infoDivider: {
+					height: StyleSheet.hairlineWidth,
+					backgroundColor: theme.onSurface,
+					marginLeft: spacing.lg,
+				},
+				dangerCard: {
+					backgroundColor: theme.surface,
+					borderRadius,
+					overflow: "hidden",
+					borderWidth: 1,
+					borderColor: theme.errorSurface,
+				},
+				dangerRow: {
+					flexDirection: "row",
+					alignItems: "center",
+					justifyContent: "space-between",
+					paddingHorizontal: spacing.lg,
+					paddingVertical: 14,
+					minHeight: 52,
+					backgroundColor: theme.surface,
+				},
 			}),
 		[theme]
 	)
@@ -417,6 +475,20 @@ export default function Index() {
 		const displayM = m.toString().padStart(2, "0")
 		return `${displayH}:${displayM} ${period}`
 	}, [reminderHour, reminderMinute])
+
+	const reminderSwitchTrackColor = useMemo(
+		() => ({
+			false: colorScheme === "dark" ? "#5B667A" : "#CBD5E1",
+			true: theme.primary,
+		}),
+		[colorScheme, theme.primary]
+	)
+
+	const reminderSwitchThumbColor = notificationsEnabled
+		? theme.surface
+		: colorScheme === "dark"
+			? "#F8FAFC"
+			: "#FFFFFF"
 
 	const allSettingsLoaded = useMemo(
 		() =>
@@ -478,6 +550,100 @@ export default function Index() {
 		},
 		[updateReminderTime]
 	)
+
+	const openExternalLink = useCallback(
+		async (url: string | undefined, label: string) => {
+			if (!url) {
+				Alert.alert(
+					"Link Not Configured",
+					`${label} URL is not configured for this build yet.`
+				)
+				return
+			}
+
+			try {
+				const canOpen = await Linking.canOpenURL(url)
+				if (!canOpen) {
+					Alert.alert(
+						"Unable to Open Link",
+						`Could not open ${label} right now.`
+					)
+					return
+				}
+				await Linking.openURL(url)
+			} catch {
+				Alert.alert(
+					"Unable to Open Link",
+					`Could not open ${label} right now.`
+				)
+			}
+		},
+		[]
+	)
+
+	const handleSignOut = useCallback(async () => {
+		if (isSigningOut) return
+		setIsSigningOut(true)
+		try {
+			await logout()
+			await updateOnboardingComplete(false)
+			router.replace("/(onboarding)/auth-choice")
+		} finally {
+			setIsSigningOut(false)
+		}
+	}, [isSigningOut, logout, updateOnboardingComplete])
+
+	const runDeleteAccount = useCallback(async () => {
+		if (isDeletingAccount) return
+		setIsDeletingAccount(true)
+		try {
+			await deleteAccount()
+			await updateOnboardingComplete(false)
+			router.replace("/(onboarding)/auth-choice")
+			Alert.alert(
+				"Account Deleted",
+				"Your account was anonymized and signed out from this device."
+			)
+		} catch (error: any) {
+			Alert.alert(
+				"Delete Failed",
+				error?.response?.data?.message ??
+					"Could not delete your account right now. Please try again."
+			)
+		} finally {
+			setIsDeletingAccount(false)
+		}
+	}, [deleteAccount, isDeletingAccount, updateOnboardingComplete])
+
+	const confirmDeleteAccount = useCallback(() => {
+		Alert.alert(
+			"Delete Account?",
+			"This permanently anonymizes your account and signs you out.",
+			[
+				{ text: "Cancel", style: "cancel" },
+				{
+					text: "Continue",
+					style: "destructive",
+					onPress: () => {
+						Alert.alert(
+							"Final Confirmation",
+							"This action cannot be undone.",
+							[
+								{ text: "Keep Account", style: "cancel" },
+								{
+									text: "Delete Account",
+									style: "destructive",
+									onPress: () => {
+										void runDeleteAccount()
+									},
+								},
+							]
+						)
+					},
+				},
+			]
+		)
+	}, [runDeleteAccount])
 
 	return (
 		<View style={styles.container}>
@@ -752,11 +918,11 @@ export default function Index() {
 								<Switch
 									value={notificationsEnabled}
 									onValueChange={updateNotificationsEnabled}
-									trackColor={{
-										false: theme.onSurface,
-										true: theme.primary,
-									}}
-									thumbColor={theme.surface}
+									trackColor={reminderSwitchTrackColor}
+									thumbColor={reminderSwitchThumbColor}
+									ios_backgroundColor={
+										reminderSwitchTrackColor.false
+									}
 								/>
 							</View>
 
@@ -800,6 +966,179 @@ export default function Index() {
 							)}
 						</View>
 					</View>
+
+					{/* Legal */}
+					<View>
+						<ThemedText
+							type="subtitleBold"
+							style={styles.sectionLabel}
+						>
+							LEGAL
+						</ThemedText>
+						<View style={styles.infoCard}>
+							<CustomPressable
+								borderRadius={borderRadius}
+								style={styles.infoRow}
+								onPress={() =>
+									void openExternalLink(
+										PRIVACY_POLICY_URL,
+										"Privacy Policy"
+									)
+								}
+							>
+								<View style={styles.infoRowLeft}>
+									<Ionicons
+										name="shield-checkmark-outline"
+										size={18}
+										color={theme.primary}
+									/>
+									<View style={styles.infoRowText}>
+										<ThemedText type="defaultSemiBold">
+											Privacy Policy
+										</ThemedText>
+									</View>
+								</View>
+								<Ionicons
+									name="open-outline"
+									size={16}
+									color={theme.text}
+									style={{ opacity: 0.5 }}
+								/>
+							</CustomPressable>
+							<View style={styles.infoDivider} />
+							<CustomPressable
+								borderRadius={borderRadius}
+								style={styles.infoRow}
+								onPress={() =>
+									void openExternalLink(
+										TERMS_URL,
+										"Terms of Service"
+									)
+								}
+							>
+								<View style={styles.infoRowLeft}>
+									<Ionicons
+										name="document-text-outline"
+										size={18}
+										color={theme.primary}
+									/>
+									<View style={styles.infoRowText}>
+										<ThemedText type="defaultSemiBold">
+											Terms of Service
+										</ThemedText>
+									</View>
+								</View>
+								<Ionicons
+									name="open-outline"
+									size={16}
+									color={theme.text}
+									style={{ opacity: 0.5 }}
+								/>
+							</CustomPressable>
+							<View style={styles.infoDivider} />
+							<CustomPressable
+								borderRadius={borderRadius}
+								style={styles.infoRow}
+								onPress={() =>
+									void openExternalLink(
+										SUPPORT_URL,
+										"Support"
+									)
+								}
+							>
+								<View style={styles.infoRowLeft}>
+									<Ionicons
+										name="help-circle-outline"
+										size={18}
+										color={theme.primary}
+									/>
+									<View style={styles.infoRowText}>
+										<ThemedText type="defaultSemiBold">
+											Support
+										</ThemedText>
+									</View>
+								</View>
+								<Ionicons
+									name="open-outline"
+									size={16}
+									color={theme.text}
+									style={{ opacity: 0.5 }}
+								/>
+							</CustomPressable>
+						</View>
+					</View>
+
+					{/* Account */}
+					{isAuthenticated && (
+						<View>
+							<ThemedText
+								type="subtitleBold"
+								style={styles.sectionLabel}
+							>
+								ACCOUNT
+							</ThemedText>
+							<View style={styles.infoCard}>
+								<CustomPressable
+									borderRadius={borderRadius}
+									style={styles.infoRow}
+									onPress={() => void handleSignOut()}
+									disabled={isSigningOut || isDeletingAccount}
+								>
+									<View style={styles.infoRowLeft}>
+										<Ionicons
+											name="log-out-outline"
+											size={18}
+											color={theme.primary}
+										/>
+										<View style={styles.infoRowText}>
+											<ThemedText type="defaultSemiBold">
+												{isSigningOut
+													? "Signing Out…"
+													: "Sign Out"}
+											</ThemedText>
+										</View>
+									</View>
+									<Ionicons
+										name="chevron-forward"
+										size={16}
+										color={theme.text}
+										style={{ opacity: 0.5 }}
+									/>
+								</CustomPressable>
+							</View>
+
+							<View style={styles.dangerCard}>
+								<CustomPressable
+									borderRadius={borderRadius}
+									style={styles.dangerRow}
+									onPress={confirmDeleteAccount}
+									disabled={isSigningOut || isDeletingAccount}
+								>
+									<View style={styles.infoRowLeft}>
+										<Ionicons
+											name="trash-outline"
+											size={18}
+											color={theme.error}
+										/>
+										<View style={styles.infoRowText}>
+											<ThemedText
+												type="defaultSemiBold"
+												color={theme.error}
+											>
+												{isDeletingAccount
+													? "Deleting Account…"
+													: "Delete Account"}
+											</ThemedText>
+											<ThemedText type="subtitleLight">
+												Permanently anonymizes your
+												account data.
+											</ThemedText>
+										</View>
+									</View>
+								</CustomPressable>
+							</View>
+						</View>
+					)}
 				</ScrollView>
 			) : (
 				<LoadingState message="Loading settings…" />

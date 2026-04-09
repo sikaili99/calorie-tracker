@@ -40,8 +40,8 @@ export class AuthService {
 		password: string
 	): Promise<AuthUser | null> {
 		const normalizedEmail = email.trim().toLowerCase()
-		const user = await this.prisma.user.findUnique({
-			where: { email: normalizedEmail },
+		const user = await this.prisma.user.findFirst({
+			where: { email: normalizedEmail, deletedAt: null },
 		})
 		if (!user || !user.password) return null
 		const valid = await bcrypt.compare(password, user.password)
@@ -51,8 +51,8 @@ export class AuthService {
 
 	async register(dto: RegisterRequest): Promise<AuthResponse> {
 		const normalizedEmail = dto.email.trim().toLowerCase()
-		const existing = await this.prisma.user.findUnique({
-			where: { email: normalizedEmail },
+		const existing = await this.prisma.user.findFirst({
+			where: { email: normalizedEmail, deletedAt: null },
 		})
 		if (existing) {
 			throw new ConflictException("Email already in use")
@@ -100,8 +100,8 @@ export class AuthService {
 		const lastName = family_name ?? ""
 
 		try {
-			const userByGoogleId = await this.prisma.user.findUnique({
-				where: { googleId },
+			const userByGoogleId = await this.prisma.user.findFirst({
+				where: { googleId, deletedAt: null },
 			})
 
 			if (userByGoogleId) {
@@ -131,8 +131,8 @@ export class AuthService {
 				return this.generateTokens(this.toAuthUser(resolvedUser))
 			}
 
-			const userByEmail = await this.prisma.user.findUnique({
-				where: { email },
+			const userByEmail = await this.prisma.user.findFirst({
+				where: { email, deletedAt: null },
 			})
 			if (userByEmail) {
 				if (userByEmail.googleId && userByEmail.googleId !== googleId) {
@@ -175,6 +175,10 @@ export class AuthService {
 		if (!stored || stored.expiresAt < new Date()) {
 			throw new UnauthorizedException("Invalid or expired refresh token")
 		}
+		if (stored.user.deletedAt) {
+			await this.prisma.refreshToken.delete({ where: { id: stored.id } })
+			throw new UnauthorizedException("Invalid or expired refresh token")
+		}
 		await this.prisma.refreshToken.delete({ where: { id: stored.id } })
 		return this.generateTokens(this.toAuthUser(stored.user))
 	}
@@ -184,13 +188,42 @@ export class AuthService {
 	}
 
 	async getMe(userId: string): Promise<AuthUser> {
-		const user = await this.prisma.user.findUnique({
-			where: { id: userId },
+		const user = await this.prisma.user.findFirst({
+			where: { id: userId, deletedAt: null },
 		})
 		if (!user) {
 			throw new UnauthorizedException("User not found")
 		}
 		return this.toAuthUser(user)
+	}
+
+	async deleteMe(userId: string): Promise<void> {
+		const user = await this.prisma.user.findFirst({
+			where: { id: userId, deletedAt: null },
+		})
+		if (!user) {
+			throw new UnauthorizedException("User not found")
+		}
+
+		const now = new Date()
+		const anonymizedSuffix = `${now.getTime()}-${randomUUID().slice(0, 8)}`
+		const anonymizedEmail = `deleted+${anonymizedSuffix}@deleted.calorietracker.app`
+
+		await this.prisma.$transaction(async (tx) => {
+			await tx.refreshToken.deleteMany({ where: { userId } })
+			await tx.user.update({
+				where: { id: userId },
+				data: {
+					email: anonymizedEmail,
+					firstName: "Deleted",
+					lastName: "Account",
+					password: null,
+					googleId: null,
+					deletedAt: now,
+					anonymizedAt: now,
+				},
+			})
+		})
 	}
 
 	private async generateTokens(user: AuthUser): Promise<AuthResponse> {

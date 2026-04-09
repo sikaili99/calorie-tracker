@@ -28,6 +28,7 @@ interface AuthContextProps {
 	) => Promise<void>
 	loginWithGoogle: () => Promise<void>
 	logout: () => Promise<void>
+	deleteAccount: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined)
@@ -149,6 +150,15 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({
 		}
 	}, [])
 
+	const deleteAccount = useCallback(async () => {
+		try {
+			await BackendAPI.deleteMyAccount()
+		} finally {
+			await tokenStorage.clearTokens()
+			setUser(null)
+		}
+	}, [])
+
 	const contextValue = useMemo(
 		() => ({
 			user,
@@ -158,8 +168,17 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({
 			register,
 			loginWithGoogle,
 			logout,
+			deleteAccount,
 		}),
-		[user, isAuthLoading, login, register, loginWithGoogle, logout]
+		[
+			user,
+			isAuthLoading,
+			login,
+			register,
+			loginWithGoogle,
+			logout,
+			deleteAccount,
+		]
 	)
 
 	return (

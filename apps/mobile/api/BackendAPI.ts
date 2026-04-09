@@ -250,6 +250,10 @@ export const BackendAPI = {
 		await client.post("/auth/logout", { refreshToken })
 	},
 
+	async deleteMyAccount(): Promise<void> {
+		await client.delete("/auth/me")
+	},
+
 	async syncDiaryEntries(
 		dto: SyncEntriesRequest
 	): Promise<SyncEntriesResponse> {
