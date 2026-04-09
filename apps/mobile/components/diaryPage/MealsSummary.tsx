@@ -13,6 +13,12 @@ import { SelectionContext } from "@/providers/SelectionProvider"
 import { CustomPressable } from "../CustomPressable"
 import { MealType } from "@/interfaces/Meals"
 import { getMealTypeLabel } from "@/utils/Meals"
+import Animated from "react-native-reanimated"
+import {
+	getFadeInDownAnimation,
+	getLayoutTransition,
+	useMotionEnabled,
+} from "@/hooks/useMotion"
 
 interface MealProps {
 	eatenCalories: number
@@ -26,6 +32,7 @@ interface MealsSummaryProps {
 
 export const MealsSummary = ({ meals }: MealsSummaryProps) => {
 	const theme = useThemeColor()
+	const motionEnabled = useMotionEnabled()
 	const { setMeal } = useContext(SelectionContext)
 	const styles = useMemo(
 		() =>
@@ -102,11 +109,19 @@ export const MealsSummary = ({ meals }: MealsSummaryProps) => {
 				{mealTypes.map((meal, index) => {
 					const { eatenCalories, totalCalories, foods } = meals[index]
 					return (
-						<View key={meal}>
+						<Animated.View
+							key={meal}
+							entering={getFadeInDownAnimation(
+								motionEnabled,
+								Math.min(index * 55, 220)
+							)}
+							layout={getLayoutTransition(motionEnabled)}
+						>
 							<CustomPressable
 								borderRadius={borderRadius}
 								android_ripple={{ color: theme.text }}
 								onPress={() => handlePressCard(meal)}
+								pressScale={0.995}
 							>
 								<View style={styles.itemsRow}>
 									<CalorieMealProgress
@@ -138,7 +153,10 @@ export const MealsSummary = ({ meals }: MealsSummaryProps) => {
 									</View>
 									<TouchableOpacity
 										hitSlop={8}
-										style={[styles.button, { marginRight: 4 }]}
+										style={[
+											styles.button,
+											{ marginRight: 4 },
+										]}
 										onPress={() => handlePhotoLog({ meal })}
 									>
 										<Ionicons
@@ -169,7 +187,7 @@ export const MealsSummary = ({ meals }: MealsSummaryProps) => {
 									/>
 								</View>
 							)}
-						</View>
+						</Animated.View>
 					)
 				})}
 			</View>

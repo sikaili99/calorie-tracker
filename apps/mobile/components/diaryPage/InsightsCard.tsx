@@ -1,10 +1,12 @@
-import React, { useMemo } from "react"
-import { View, StyleSheet, ScrollView, TouchableOpacity } from "react-native"
+import React, { type ComponentProps, useMemo } from "react"
+import { View, StyleSheet, ScrollView } from "react-native"
 import { ThemedText } from "@/components/ThemedText"
 import { useThemeColor } from "@/hooks/useThemeColor"
 import { borderRadius } from "@/constants/Theme"
 import { Insight } from "@/utils/insightRules"
 import Ionicons from "@expo/vector-icons/Ionicons"
+import Animated from "react-native-reanimated"
+import { getFadeInDownAnimation, useMotionEnabled } from "@/hooks/useMotion"
 
 interface InsightsCardProps {
 	insights: Insight[]
@@ -18,6 +20,7 @@ const TYPE_COLORS = {
 
 export const InsightsCard = ({ insights }: InsightsCardProps) => {
 	const theme = useThemeColor()
+	const motionEnabled = useMotionEnabled()
 
 	const styles = useMemo(
 		() =>
@@ -62,15 +65,23 @@ export const InsightsCard = ({ insights }: InsightsCardProps) => {
 				showsHorizontalScrollIndicator={false}
 				contentContainerStyle={{ paddingRight: 4 }}
 			>
-				{insights.map((insight) => {
+				{insights.map((insight, index) => {
 					const color = TYPE_COLORS[insight.type]
 					return (
-						<View
+						<Animated.View
 							key={insight.id}
+							entering={getFadeInDownAnimation(
+								motionEnabled,
+								Math.min(index * 50, 180)
+							)}
 							style={[styles.pill, { borderLeftColor: color }]}
 						>
 							<Ionicons
-								name={insight.icon as any}
+								name={
+									insight.icon as ComponentProps<
+										typeof Ionicons
+									>["name"]
+								}
 								size={20}
 								color={color}
 							/>
@@ -85,7 +96,7 @@ export const InsightsCard = ({ insights }: InsightsCardProps) => {
 									{insight.body}
 								</ThemedText>
 							</View>
-						</View>
+						</Animated.View>
 					)
 				})}
 			</ScrollView>

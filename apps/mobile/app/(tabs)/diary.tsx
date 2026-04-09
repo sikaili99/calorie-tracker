@@ -18,9 +18,12 @@ import { useSettings } from "@/providers/SettingsProvider"
 import Ionicons from "@expo/vector-icons/Ionicons"
 import { formatDate } from "@/utils/Strings"
 import { predictDayTotal } from "@/utils/prediction"
+import Animated from "react-native-reanimated"
+import { getFadeInDownAnimation, useMotionEnabled } from "@/hooks/useMotion"
 
 export default function DiaryScreen() {
 	const theme = useThemeColor()
+	const motionEnabled = useMotionEnabled()
 
 	useNavigationBarColor(theme.bottomNav)
 
@@ -152,6 +155,11 @@ export default function DiaryScreen() {
 	}, [mealDiaryEntries, mealBreakdown, targetCalories])
 
 	const headerTitle = isToday ? "Today" : formatDate(selectedDate)
+	const animationKey = useMemo(
+		() =>
+			`${selectedDate.getFullYear()}-${selectedDate.getMonth()}-${selectedDate.getDate()}`,
+		[selectedDate]
+	)
 
 	const dateNavLeft = (
 		<TouchableOpacity
@@ -159,11 +167,7 @@ export default function DiaryScreen() {
 			onPress={goToPrevDay}
 			hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
 		>
-			<Ionicons
-				name="chevron-back"
-				size={22}
-				color={theme.text}
-			/>
+			<Ionicons name="chevron-back" size={22} color={theme.text} />
 		</TouchableOpacity>
 	)
 
@@ -187,7 +191,11 @@ export default function DiaryScreen() {
 
 	return (
 		<View style={styles.mainContainer}>
-			<View style={styles.headerRow}>
+			<Animated.View
+				key={`diary-header-${animationKey}`}
+				entering={getFadeInDownAnimation(motionEnabled, 20, 220)}
+				style={styles.headerRow}
+			>
 				<Header
 					title={headerTitle}
 					sticky
@@ -195,10 +203,19 @@ export default function DiaryScreen() {
 					leftComponent={dateNavLeft}
 					rightComponent={dateNavRight}
 				/>
-			</View>
+			</Animated.View>
 			<ScrollView contentContainerStyle={styles.scrollContainer}>
-				<InsightsCard insights={insights} />
-				<View style={styles.nutritionSummary}>
+				<Animated.View
+					key={`insights-${animationKey}`}
+					entering={getFadeInDownAnimation(motionEnabled, 60, 240)}
+				>
+					<InsightsCard insights={insights} />
+				</Animated.View>
+				<Animated.View
+					key={`nutrition-${animationKey}`}
+					entering={getFadeInDownAnimation(motionEnabled, 110, 260)}
+					style={styles.nutritionSummary}
+				>
 					{targetCalories && (
 						<NutritionSummary
 							eatenCalories={totalSummary.calories}
@@ -222,8 +239,12 @@ export default function DiaryScreen() {
 							}
 						/>
 					)}
-				</View>
-				<View style={styles.mealsSection}>
+				</Animated.View>
+				<Animated.View
+					key={`meals-${animationKey}`}
+					entering={getFadeInDownAnimation(motionEnabled, 160, 280)}
+					style={styles.mealsSection}
+				>
 					<MealsSummary
 						meals={[
 							{
@@ -248,7 +269,7 @@ export default function DiaryScreen() {
 							},
 						]}
 					/>
-				</View>
+				</Animated.View>
 			</ScrollView>
 		</View>
 	)

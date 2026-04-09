@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import {
 	View,
 	StyleSheet,
@@ -16,6 +16,19 @@ import { useSettings } from "@/providers/SettingsProvider"
 import { calculateTDEE, ActivityLevel, GoalType } from "@/utils/tdee"
 import { borderRadius } from "@/constants/Theme"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import Animated, {
+	interpolateColor,
+	useAnimatedStyle,
+	useSharedValue,
+	withTiming,
+} from "react-native-reanimated"
+import {
+	getFadeInDownAnimation,
+	getFadeOutUpAnimation,
+	getLayoutTransition,
+	motionDurations,
+	useMotionEnabled,
+} from "@/hooks/useMotion"
 
 const ACTIVITY_OPTIONS: {
 	value: ActivityLevel
@@ -60,8 +73,47 @@ const GOAL_OPTIONS: { value: GoalType; label: string; description: string }[] =
 		},
 	]
 
+function ProgressSegment({ active }: { active: boolean }) {
+	const theme = useThemeColor()
+	const motionEnabled = useMotionEnabled()
+	const progress = useSharedValue(active ? 1 : 0)
+
+	useEffect(() => {
+		progress.value = motionEnabled
+			? withTiming(active ? 1 : 0, {
+					duration: motionDurations.quick,
+				})
+			: active
+				? 1
+				: 0
+	}, [active, motionEnabled, progress])
+
+	const animatedStyle = useAnimatedStyle(() => ({
+		backgroundColor: interpolateColor(
+			progress.value,
+			[0, 1],
+			[theme.onSurface, theme.primary]
+		),
+		transform: [{ scaleX: 0.96 + progress.value * 0.04 }],
+	}))
+
+	return (
+		<Animated.View
+			style={[
+				{
+					height: 4,
+					borderRadius: 2,
+					flex: 1,
+				},
+				animatedStyle,
+			]}
+		/>
+	)
+}
+
 export default function GoalWizardScreen() {
 	const theme = useThemeColor()
+	const motionEnabled = useMotionEnabled()
 	const insets = useSafeAreaInsets()
 	const {
 		updateOnboardingComplete,
@@ -164,15 +216,6 @@ export default function GoalWizardScreen() {
 			flexDirection: "row",
 			gap: 6,
 			marginBottom: 4,
-		},
-		progressSegment: {
-			height: 4,
-			borderRadius: 2,
-			flex: 1,
-			backgroundColor: theme.onSurface,
-		},
-		progressSegmentActive: {
-			backgroundColor: theme.primary,
 		},
 	})
 
@@ -277,16 +320,13 @@ export default function GoalWizardScreen() {
 			>
 				<View style={styles.progressContainer}>
 					{[1, 2, 3, 4].map((s) => (
-						<View
-							key={s}
-							style={[
-								styles.progressSegment,
-								s <= step && styles.progressSegmentActive,
-							]}
-						/>
+						<ProgressSegment key={s} active={s <= step} />
 					))}
 				</View>
-				<View style={styles.header}>
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 20)}
+					style={styles.header}
+				>
 					<ThemedText type="subtitleLight">
 						Step {step} of 4
 					</ThemedText>
@@ -299,10 +339,16 @@ export default function GoalWizardScreen() {
 							Skip
 						</ThemedText>
 					</TouchableOpacity>
-				</View>
+				</Animated.View>
 
 				{step === 1 && (
-					<>
+					<Animated.View
+						key="goal-step-1"
+						entering={getFadeInDownAnimation(motionEnabled, 50)}
+						exiting={getFadeOutUpAnimation(motionEnabled)}
+						layout={getLayoutTransition(motionEnabled)}
+						style={{ gap: 12 }}
+					>
 						<ThemedText type="title">About You</ThemedText>
 						<ThemedText
 							type="subtitleLight"
@@ -326,11 +372,17 @@ export default function GoalWizardScreen() {
 							onChangeText={setUserAge}
 							keyboardType="number-pad"
 						/>
-					</>
+					</Animated.View>
 				)}
 
 				{step === 2 && (
-					<>
+					<Animated.View
+						key="goal-step-2"
+						entering={getFadeInDownAnimation(motionEnabled, 50)}
+						exiting={getFadeOutUpAnimation(motionEnabled)}
+						layout={getLayoutTransition(motionEnabled)}
+						style={{ gap: 12 }}
+					>
 						<ThemedText type="title">Body Measurements</ThemedText>
 						<ThemedText
 							type="subtitleLight"
@@ -354,11 +406,17 @@ export default function GoalWizardScreen() {
 							onChangeText={setUserHeightCm}
 							keyboardType="decimal-pad"
 						/>
-					</>
+					</Animated.View>
 				)}
 
 				{step === 3 && (
-					<>
+					<Animated.View
+						key="goal-step-3"
+						entering={getFadeInDownAnimation(motionEnabled, 50)}
+						exiting={getFadeOutUpAnimation(motionEnabled)}
+						layout={getLayoutTransition(motionEnabled)}
+						style={{ gap: 12 }}
+					>
 						<ThemedText type="title">Activity Level</ThemedText>
 						<ThemedText
 							type="subtitleLight"
@@ -379,6 +437,7 @@ export default function GoalWizardScreen() {
 										: styles.optionButton
 								}
 								onPress={() => setActivityLevel(opt.value)}
+								pressScale={0.99}
 							>
 								<ThemedText type="defaultSemiBold">
 									{opt.label}
@@ -388,11 +447,17 @@ export default function GoalWizardScreen() {
 								</ThemedText>
 							</CustomPressable>
 						))}
-					</>
+					</Animated.View>
 				)}
 
 				{step === 4 && (
-					<>
+					<Animated.View
+						key="goal-step-4"
+						entering={getFadeInDownAnimation(motionEnabled, 50)}
+						exiting={getFadeOutUpAnimation(motionEnabled)}
+						layout={getLayoutTransition(motionEnabled)}
+						style={{ gap: 12 }}
+					>
 						<ThemedText type="title">Your Goal</ThemedText>
 						<ThemedText
 							type="subtitleLight"
@@ -413,6 +478,7 @@ export default function GoalWizardScreen() {
 										: styles.optionButton
 								}
 								onPress={() => setGoalType(opt.value)}
+								pressScale={0.99}
 							>
 								<ThemedText type="defaultSemiBold">
 									{opt.label}
@@ -422,27 +488,27 @@ export default function GoalWizardScreen() {
 								</ThemedText>
 							</CustomPressable>
 						))}
-					</>
+					</Animated.View>
 				)}
 			</ScrollView>
-			<View
-				style={[
-					styles.footer,
-					{ paddingBottom: footerBottomInset },
-				]}
-			>
+			<View style={[styles.footer, { paddingBottom: footerBottomInset }]}>
 				{stepError && (
-					<View style={styles.footerError}>
+					<Animated.View
+						entering={getFadeInDownAnimation(motionEnabled, 0, 220)}
+						exiting={getFadeOutUpAnimation(motionEnabled)}
+						style={styles.footerError}
+					>
 						<ThemedText type="subtitle" color={theme.error}>
 							{stepError}
 						</ThemedText>
-					</View>
+					</Animated.View>
 				)}
 				<View style={styles.buttonRow}>
 					<CustomPressable
 						borderRadius={borderRadius}
 						style={[styles.stepButton, styles.secondaryButton]}
 						onPress={handleBack}
+						pressScale={0.985}
 					>
 						<ThemedText type="defaultSemiBold">Back</ThemedText>
 					</CustomPressable>
@@ -457,6 +523,7 @@ export default function GoalWizardScreen() {
 						]}
 						onPress={step < 4 ? handleNext : handleFinish}
 						testID="goal-wizard-next"
+						pressScale={0.98}
 					>
 						<ThemedText
 							type="defaultSemiBold"

@@ -12,6 +12,7 @@ type PrimaryButtonProps = {
 	disabled?: boolean
 	color?: string
 	style?: ViewStyle
+	pressScale?: number
 }
 
 export const PrimaryButton = ({
@@ -21,6 +22,7 @@ export const PrimaryButton = ({
 	disabled,
 	color,
 	style,
+	pressScale,
 }: PrimaryButtonProps) => {
 	const theme = useThemeColor()
 
@@ -44,6 +46,7 @@ export const PrimaryButton = ({
 			style={{ ...styles.button, ...style }}
 			onPress={onPress}
 			disabled={disabled || isLoading}
+			pressScale={pressScale}
 		>
 			{isLoading ? (
 				<ActivityIndicator color={theme.background} />

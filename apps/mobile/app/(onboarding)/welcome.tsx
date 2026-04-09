@@ -6,9 +6,16 @@ import { ThemedText } from "@/components/ThemedText"
 import { CustomPressable } from "@/components/CustomPressable"
 import Ionicons from "@expo/vector-icons/Ionicons"
 import { borderRadius } from "@/constants/Theme"
+import Animated from "react-native-reanimated"
+import {
+	getFadeInAnimation,
+	getFadeInDownAnimation,
+	useMotionEnabled,
+} from "@/hooks/useMotion"
 
 export default function WelcomeScreen() {
 	const theme = useThemeColor()
+	const motionEnabled = useMotionEnabled()
 
 	const styles = StyleSheet.create({
 		container: {
@@ -87,30 +94,50 @@ export default function WelcomeScreen() {
 
 	return (
 		<View style={styles.container}>
-			<View style={styles.ornamentTop} />
-			<View style={styles.ornamentBottom} />
+			<Animated.View
+				entering={getFadeInAnimation(motionEnabled, 0, 320)}
+				style={styles.ornamentTop}
+			/>
+			<Animated.View
+				entering={getFadeInAnimation(motionEnabled, 90, 320)}
+				style={styles.ornamentBottom}
+			/>
 			<View style={styles.content}>
-				<View style={styles.iconContainer}>
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 60, 320)}
+					style={styles.iconContainer}
+				>
 					<Ionicons
 						name="nutrition-outline"
 						size={48}
 						color={theme.primary}
 					/>
-				</View>
-				<ThemedText type="title" centered>
-					Calorie Tracker
-				</ThemedText>
-				<ThemedText
-					type="subtitleLight"
-					centered
-					style={styles.description}
+				</Animated.View>
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 120)}
 				>
-					Track meals, hit your goals, and build better nutrition
-					habits one day at a time.
-				</ThemedText>
+					<ThemedText type="title" centered>
+						Calorie Tracker
+					</ThemedText>
+				</Animated.View>
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 170)}
+				>
+					<ThemedText
+						type="subtitleLight"
+						centered
+						style={styles.description}
+					>
+						Track meals, hit your goals, and build better nutrition
+						habits one day at a time.
+					</ThemedText>
+				</Animated.View>
 
 				<View style={styles.highlights}>
-					<View style={styles.highlightRow}>
+					<Animated.View
+						entering={getFadeInDownAnimation(motionEnabled, 220)}
+						style={styles.highlightRow}
+					>
 						<Ionicons
 							name="checkmark-circle-outline"
 							size={18}
@@ -119,8 +146,11 @@ export default function WelcomeScreen() {
 						<ThemedText type="subtitleLight">
 							Personalized calorie and macro targets
 						</ThemedText>
-					</View>
-					<View style={styles.highlightRow}>
+					</Animated.View>
+					<Animated.View
+						entering={getFadeInDownAnimation(motionEnabled, 270)}
+						style={styles.highlightRow}
+					>
 						<Ionicons
 							name="checkmark-circle-outline"
 							size={18}
@@ -129,29 +159,42 @@ export default function WelcomeScreen() {
 						<ThemedText type="subtitleLight">
 							AI-powered food search and coaching
 						</ThemedText>
-					</View>
+					</Animated.View>
 				</View>
 
-				<CustomPressable
-					borderRadius={borderRadius}
-					style={styles.button}
-					onPress={() => router.push("/(onboarding)/auth-choice")}
-					testID="welcome-get-started"
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 320)}
 				>
-					<ThemedText type="defaultSemiBold" color={theme.background}>
-						Get Started
-					</ThemedText>
-				</CustomPressable>
+					<CustomPressable
+						borderRadius={borderRadius}
+						style={styles.button}
+						onPress={() => router.push("/(onboarding)/auth-choice")}
+						testID="welcome-get-started"
+						pressScale={0.98}
+					>
+						<ThemedText
+							type="defaultSemiBold"
+							color={theme.background}
+						>
+							Get Started
+						</ThemedText>
+					</CustomPressable>
+				</Animated.View>
 
-				<CustomPressable
-					borderRadius={borderRadius}
-					style={styles.linkButton}
-					onPress={() => router.push("/(onboarding)/login")}
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 360)}
 				>
-					<ThemedText type="subtitleLight" color={theme.primary}>
-						I already have an account
-					</ThemedText>
-				</CustomPressable>
+					<CustomPressable
+						borderRadius={borderRadius}
+						style={styles.linkButton}
+						onPress={() => router.push("/(onboarding)/login")}
+						pressScale={0.99}
+					>
+						<ThemedText type="subtitleLight" color={theme.primary}>
+							I already have an account
+						</ThemedText>
+					</CustomPressable>
+				</Animated.View>
 			</View>
 		</View>
 	)

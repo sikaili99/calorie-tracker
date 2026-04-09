@@ -2,15 +2,22 @@ import React, { useMemo } from "react"
 import { View, StyleSheet } from "react-native"
 import { ThemedText } from "@/components/ThemedText"
 import { useThemeColor } from "@/hooks/useThemeColor"
-import { borderRadius } from "@/constants/Theme"
 import { ChatMessage } from "@/api/BackendAPI"
+import Animated from "react-native-reanimated"
+import {
+	getFadeInDownAnimation,
+	getLayoutTransition,
+	useMotionEnabled,
+} from "@/hooks/useMotion"
 
 interface MessageBubbleProps {
 	message: ChatMessage
+	index?: number
 }
 
-export const MessageBubble = ({ message }: MessageBubbleProps) => {
+export const MessageBubble = ({ message, index = 0 }: MessageBubbleProps) => {
 	const theme = useThemeColor()
+	const motionEnabled = useMotionEnabled()
 	const isUser = message.role === "user"
 
 	const styles = useMemo(
@@ -41,10 +48,20 @@ export const MessageBubble = ({ message }: MessageBubbleProps) => {
 	)
 
 	return (
-		<View style={styles.row}>
-			<View style={styles.bubble}>
-				<ThemedText style={styles.text}>{message.content}</ThemedText>
+		<Animated.View
+			entering={getFadeInDownAnimation(
+				motionEnabled,
+				Math.min(index * 36, 180)
+			)}
+			layout={getLayoutTransition(motionEnabled)}
+		>
+			<View style={styles.row}>
+				<View style={styles.bubble}>
+					<ThemedText style={styles.text}>
+						{message.content}
+					</ThemedText>
+				</View>
 			</View>
-		</View>
+		</Animated.View>
 	)
 }

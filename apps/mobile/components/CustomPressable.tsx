@@ -1,27 +1,34 @@
 import { useThemeColor } from "@/hooks/useThemeColor"
+import { usePressScale } from "@/hooks/useMotion"
 import React, { useMemo } from "react"
 import {
 	Pressable,
-	View,
 	StyleSheet,
 	PressableProps,
 	ViewStyle,
 	StyleProp,
+	GestureResponderEvent,
 } from "react-native"
+import Animated from "react-native-reanimated"
 
 type CustomPressableProps = Omit<PressableProps, "style"> &
 	React.PropsWithChildren & {
 		borderRadius?: number
 		style?: StyleProp<ViewStyle>
+		pressScale?: number
 	}
 
 export const CustomPressable = ({
 	children,
 	borderRadius,
 	style,
+	pressScale,
 	...props
 }: CustomPressableProps) => {
 	const theme = useThemeColor()
+	const { animatedStyle, handlePressIn, handlePressOut } =
+		usePressScale(pressScale)
+	const { onPressIn, onPressOut, testID, ...restProps } = props
 	const {
 		margin,
 		marginTop,
@@ -62,17 +69,30 @@ export const CustomPressable = ({
 		]
 	)
 
+	const handlePressInWithAnimation = (event: GestureResponderEvent) => {
+		handlePressIn()
+		onPressIn?.(event)
+	}
+
+	const handlePressOutWithAnimation = (event: GestureResponderEvent) => {
+		handlePressOut()
+		onPressOut?.(event)
+	}
+
 	return (
-		<View style={styles.wrapper} testID={props.testID}>
+		<Animated.View style={[styles.wrapper, animatedStyle]} testID={testID}>
 			<Pressable
 				android_ripple={{
 					color: `${theme.text}22`,
 				}}
 				style={pressableStyle}
-				{...props}
+				onPressIn={handlePressInWithAnimation}
+				onPressOut={handlePressOutWithAnimation}
+				testID={testID}
+				{...restProps}
 			>
 				{children}
 			</Pressable>
-		</View>
+		</Animated.View>
 	)
 }

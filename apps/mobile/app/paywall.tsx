@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react"
-import { Alert, ScrollView, StyleSheet, View } from "react-native"
+import { Alert, Linking, ScrollView, StyleSheet, View } from "react-native"
 import { router, useLocalSearchParams } from "expo-router"
 import Ionicons from "@expo/vector-icons/Ionicons"
 import Purchases from "react-native-purchases"
@@ -8,11 +8,20 @@ import { CustomPressable } from "@/components/CustomPressable"
 import { PrimaryButton } from "@/components/PrimaryButton"
 import { useThemeColor } from "@/hooks/useThemeColor"
 import {
-	BillingPlan,
-	useSubscription,
-} from "@/providers/SubscriptionProvider"
+	PRIVACY_POLICY_URL,
+	SUPPORT_URL,
+	TERMS_URL,
+} from "@/constants/LegalConfig"
+import { BillingPlan, useSubscription } from "@/providers/SubscriptionProvider"
 import { useAuth } from "@/providers/AuthProvider"
 import { borderRadius } from "@/constants/Theme"
+import Animated from "react-native-reanimated"
+import {
+	getFadeInDownAnimation,
+	getFadeOutAnimation,
+	getLayoutTransition,
+	useMotionEnabled,
+} from "@/hooks/useMotion"
 
 const FEATURES = [
 	"AI Nutrition Coach — unlimited conversations",
@@ -25,8 +34,25 @@ const PRICING_FALLBACK: Record<BillingPlan, string> = {
 	Annual: "$29.99 / year",
 }
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+	if (typeof error !== "object" || error === null) {
+		return fallback
+	}
+
+	const message = Reflect.get(error, "message")
+	return typeof message === "string" && message.trim().length > 0
+		? message
+		: fallback
+}
+
+const getErrorCode = (error: unknown) =>
+	typeof error === "object" && error !== null
+		? Reflect.get(error, "code")
+		: undefined
+
 export default function PaywallScreen() {
 	const theme = useThemeColor()
+	const motionEnabled = useMotionEnabled()
 	const { isAuthenticated } = useAuth()
 	const {
 		isSubscriptionReady,
@@ -47,8 +73,10 @@ export default function PaywallScreen() {
 
 	const pricesByPlan = useMemo(
 		() => ({
-			Monthly: monthlyPackage?.product.priceString ?? PRICING_FALLBACK.Monthly,
-			Annual: annualPackage?.product.priceString ?? PRICING_FALLBACK.Annual,
+			Monthly:
+				monthlyPackage?.product.priceString ?? PRICING_FALLBACK.Monthly,
+			Annual:
+				annualPackage?.product.priceString ?? PRICING_FALLBACK.Annual,
 		}),
 		[monthlyPackage, annualPackage]
 	)
@@ -152,7 +180,51 @@ export default function PaywallScreen() {
 			alignItems: "center",
 			paddingVertical: 8,
 		},
+		legalLinksRow: {
+			flexDirection: "row",
+			justifyContent: "center",
+			alignItems: "center",
+			flexWrap: "wrap",
+			gap: 8,
+		},
+		legalLinkButton: {
+			paddingHorizontal: 4,
+			paddingVertical: 2,
+		},
+		legalDivider: {
+			opacity: 0.5,
+		},
 	})
+
+	const openExternalLink = async (
+		url: string | undefined,
+		label: string
+	): Promise<void> => {
+		if (!url) {
+			Alert.alert(
+				"Link Not Configured",
+				`${label} URL is not configured for this build yet.`
+			)
+			return
+		}
+
+		try {
+			const canOpen = await Linking.canOpenURL(url)
+			if (!canOpen) {
+				Alert.alert(
+					"Unable to Open Link",
+					`Could not open ${label} right now.`
+				)
+				return
+			}
+			await Linking.openURL(url)
+		} catch {
+			Alert.alert(
+				"Unable to Open Link",
+				`Could not open ${label} right now.`
+			)
+		}
+	}
 
 	const navigateToLoginForPurchase = () => {
 		Alert.alert(
@@ -194,17 +266,19 @@ export default function PaywallScreen() {
 		try {
 			await purchase(selectedPlanPackage)
 			router.back()
-		} catch (error: any) {
+		} catch (error: unknown) {
 			if (
-				error?.code ===
+				getErrorCode(error) ===
 				Purchases.PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR
 			) {
 				return
 			}
 			Alert.alert(
 				"Purchase Failed",
-				error?.message ??
+				getErrorMessage(
+					error,
 					"We couldn't complete your purchase. Please try again."
+				)
 			)
 		} finally {
 			setIsStartingTrial(false)
@@ -234,10 +308,10 @@ export default function PaywallScreen() {
 				"Restore Complete",
 				"Your available purchases have been restored."
 			)
-		} catch (error: any) {
+		} catch (error: unknown) {
 			Alert.alert(
 				"Restore Failed",
-				error?.message ?? "Could not restore purchases right now."
+				getErrorMessage(error, "Could not restore purchases right now.")
 			)
 		} finally {
 			setIsRestoringPurchase(false)
@@ -251,12 +325,16 @@ export default function PaywallScreen() {
 				style={styles.closeButton}
 				onPress={() => router.back()}
 				hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+				pressScale={0.92}
 			>
 				<Ionicons name="close" size={24} color={theme.text} />
 			</CustomPressable>
 
 			<ScrollView contentContainerStyle={styles.inner}>
-				<View style={styles.heroCard}>
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 20, 320)}
+					style={styles.heroCard}
+				>
 					<View style={styles.trialBadge}>
 						<ThemedText type="subtitleBold" color={theme.primary}>
 							7-day free trial
@@ -270,11 +348,18 @@ export default function PaywallScreen() {
 							? `Get ${featureName} plus all premium features`
 							: "Unlock the full power of your nutrition coach"}
 					</ThemedText>
-				</View>
+				</Animated.View>
 
 				<View style={{ gap: 12, marginVertical: 8 }}>
-					{FEATURES.map((feature) => (
-						<View key={feature} style={styles.featureRow}>
+					{FEATURES.map((feature, index) => (
+						<Animated.View
+							key={feature}
+							entering={getFadeInDownAnimation(
+								motionEnabled,
+								100 + index * 45
+							)}
+							style={styles.featureRow}
+						>
 							<Ionicons
 								name="checkmark-circle"
 								size={22}
@@ -283,113 +368,205 @@ export default function PaywallScreen() {
 							<ThemedText type="default" style={{ flex: 1 }}>
 								{feature}
 							</ThemedText>
-						</View>
+						</Animated.View>
 					))}
 				</View>
 
 				<View style={{ gap: 10 }}>
-					{(["Monthly", "Annual"] as BillingPlan[]).map((plan) => {
-						const isRecommended = plan === recommendedPlan
-						const isSelected = plan === selectedPlan
+					{(["Monthly", "Annual"] as BillingPlan[]).map(
+						(plan, index) => {
+							const isRecommended = plan === recommendedPlan
+							const isSelected = plan === selectedPlan
 
-						return (
-							<CustomPressable
-								key={plan}
-								borderRadius={borderRadius}
-								style={[
-									styles.pricingCard,
-									isRecommended &&
-										styles.pricingCardRecommended,
-									isSelected && styles.pricingCardSelected,
-								]}
-								onPress={() => setSelectedPlan(plan)}
-								testID={`plan-${plan.toLowerCase()}`}
-							>
-								<View>
-									<ThemedText type="defaultSemiBold">
-										{plan}
-									</ThemedText>
-									<ThemedText
-										type="subtitleLight"
-										style={styles.valueText}
+							return (
+								<Animated.View
+									key={plan}
+									entering={getFadeInDownAnimation(
+										motionEnabled,
+										230 + index * 50
+									)}
+									layout={getLayoutTransition(motionEnabled)}
+								>
+									<CustomPressable
+										borderRadius={borderRadius}
+										style={[
+											styles.pricingCard,
+											isRecommended &&
+												styles.pricingCardRecommended,
+											isSelected &&
+												styles.pricingCardSelected,
+										]}
+										onPress={() => setSelectedPlan(plan)}
+										testID={`plan-${plan.toLowerCase()}`}
+										pressScale={0.985}
 									>
-										{pricesByPlan[plan]}
-									</ThemedText>
-								</View>
+										<View>
+											<ThemedText type="defaultSemiBold">
+												{plan}
+											</ThemedText>
+											<ThemedText
+												type="subtitleLight"
+												style={styles.valueText}
+											>
+												{pricesByPlan[plan]}
+											</ThemedText>
+										</View>
 
-								<View style={styles.planBadges}>
-									{isRecommended && (
-										<View
-											style={[
-												styles.badge,
-												styles.recommendedBadge,
-											]}
-										>
-											<ThemedText
-												type="subtitleLight"
-												color={theme.primary}
-											>
-												Save 50%
-											</ThemedText>
+										<View style={styles.planBadges}>
+											{isRecommended && (
+												<View
+													style={[
+														styles.badge,
+														styles.recommendedBadge,
+													]}
+												>
+													<ThemedText
+														type="subtitleLight"
+														color={theme.primary}
+													>
+														Save 50%
+													</ThemedText>
+												</View>
+											)}
+											{isSelected && (
+												<Animated.View
+													entering={getFadeInDownAnimation(
+														motionEnabled,
+														0,
+														180
+													)}
+													exiting={getFadeOutAnimation(
+														motionEnabled
+													)}
+													style={[
+														styles.badge,
+														styles.selectedBadge,
+													]}
+												>
+													<ThemedText
+														type="subtitleLight"
+														color={theme.background}
+													>
+														Selected
+													</ThemedText>
+												</Animated.View>
+											)}
 										</View>
-									)}
-									{isSelected && (
-										<View
-											style={[
-												styles.badge,
-												styles.selectedBadge,
-											]}
-										>
-											<ThemedText
-												type="subtitleLight"
-												color={theme.background}
-											>
-												Selected
-											</ThemedText>
-										</View>
-									)}
-								</View>
-							</CustomPressable>
-						)
-					})}
+									</CustomPressable>
+								</Animated.View>
+							)
+						}
+					)}
 				</View>
 
-				<PrimaryButton
-					label={selectedPlanCta}
-					onPress={handleStartTrial}
-					isLoading={isStartingTrial || !isSubscriptionReady}
-					disabled={!isSubscriptionReady}
-				/>
-				<ThemedText
-					type="subtitleLight"
-					centered
-					style={styles.ctaSubtext}
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 320, 320)}
+					layout={getLayoutTransition(motionEnabled)}
 				>
-					{selectedPlan === "Annual"
-						? `After trial: ${selectedPlanPrice}`
-						: `Billed immediately: ${selectedPlanPrice}`}
-				</ThemedText>
-
-				<CustomPressable
-					borderRadius={borderRadius}
-					style={styles.restoreButton}
-					onPress={handleRestorePurchase}
-					disabled={isRestoringPurchase}
-				>
-					<ThemedText type="subtitleLight" color={theme.primary}>
-						{isRestoringPurchase
-							? "Restoring…"
-							: "Restore Purchase"}
+					<PrimaryButton
+						label={selectedPlanCta}
+						onPress={handleStartTrial}
+						isLoading={isStartingTrial || !isSubscriptionReady}
+						disabled={!isSubscriptionReady}
+						pressScale={0.985}
+					/>
+					<ThemedText
+						type="subtitleLight"
+						centered
+						style={styles.ctaSubtext}
+					>
+						{selectedPlan === "Annual"
+							? `After trial: ${selectedPlanPrice}`
+							: `Billed immediately: ${selectedPlanPrice}`}
 					</ThemedText>
-				</CustomPressable>
+				</Animated.View>
 
-				<ThemedText
-					type="subtitleLight"
-					centered
-					style={{ opacity: 0.6, fontSize: 11 }}
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 370)}
 				>
-					Billed securely through Apple App Store or Google Play.
-				</ThemedText>
+					<CustomPressable
+						borderRadius={borderRadius}
+						style={styles.restoreButton}
+						onPress={handleRestorePurchase}
+						disabled={isRestoringPurchase}
+						pressScale={0.99}
+					>
+						<ThemedText type="subtitleLight" color={theme.primary}>
+							{isRestoringPurchase
+								? "Restoring…"
+								: "Restore Purchase"}
+						</ThemedText>
+					</CustomPressable>
+				</Animated.View>
+
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 410)}
+				>
+					<ThemedText
+						type="subtitleLight"
+						centered
+						style={{ opacity: 0.6, fontSize: 11 }}
+					>
+						Billed securely through Apple App Store or Google Play.
+					</ThemedText>
+				</Animated.View>
+
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 450)}
+					style={styles.legalLinksRow}
+				>
+					<CustomPressable
+						borderRadius={8}
+						style={styles.legalLinkButton}
+						onPress={() =>
+							void openExternalLink(
+								PRIVACY_POLICY_URL,
+								"Privacy Policy"
+							)
+						}
+						pressScale={0.98}
+					>
+						<ThemedText type="subtitleLight" color={theme.primary}>
+							Privacy Policy
+						</ThemedText>
+					</CustomPressable>
+					<ThemedText
+						type="subtitleLight"
+						style={styles.legalDivider}
+					>
+						•
+					</ThemedText>
+					<CustomPressable
+						borderRadius={8}
+						style={styles.legalLinkButton}
+						onPress={() =>
+							void openExternalLink(TERMS_URL, "Terms of Service")
+						}
+						pressScale={0.98}
+					>
+						<ThemedText type="subtitleLight" color={theme.primary}>
+							Terms
+						</ThemedText>
+					</CustomPressable>
+					<ThemedText
+						type="subtitleLight"
+						style={styles.legalDivider}
+					>
+						•
+					</ThemedText>
+					<CustomPressable
+						borderRadius={8}
+						style={styles.legalLinkButton}
+						onPress={() =>
+							void openExternalLink(SUPPORT_URL, "Support")
+						}
+						pressScale={0.98}
+					>
+						<ThemedText type="subtitleLight" color={theme.primary}>
+							Support
+						</ThemedText>
+					</CustomPressable>
+				</Animated.View>
 			</ScrollView>
 		</View>
 	)

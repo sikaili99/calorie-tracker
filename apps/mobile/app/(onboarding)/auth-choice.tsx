@@ -6,9 +6,12 @@ import { ThemedText } from "@/components/ThemedText"
 import { CustomPressable } from "@/components/CustomPressable"
 import { borderRadius } from "@/constants/Theme"
 import Ionicons from "@expo/vector-icons/Ionicons"
+import Animated from "react-native-reanimated"
+import { getFadeInDownAnimation, useMotionEnabled } from "@/hooks/useMotion"
 
 export default function AuthChoiceScreen() {
 	const theme = useThemeColor()
+	const motionEnabled = useMotionEnabled()
 
 	const styles = StyleSheet.create({
 		container: {
@@ -77,16 +80,22 @@ export default function AuthChoiceScreen() {
 
 	return (
 		<View style={styles.container}>
-			<View style={styles.headerBlock}>
+			<Animated.View
+				entering={getFadeInDownAnimation(motionEnabled, 40, 300)}
+				style={styles.headerBlock}
+			>
 				<ThemedText type="title">Let&apos;s get you set up</ThemedText>
 				<ThemedText type="subtitleLight">
 					Create an account to sync across devices, or continue as
 					guest and set it up later.
 				</ThemedText>
-			</View>
+			</Animated.View>
 
 			<View style={{ gap: 16 }}>
-				<View style={styles.card}>
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 120, 320)}
+					style={styles.card}
+				>
 					<View style={styles.headerRow}>
 						<View style={styles.iconCircle}>
 							<Ionicons
@@ -105,7 +114,10 @@ export default function AuthChoiceScreen() {
 						</View>
 					</View>
 
-					<View style={styles.bulletRow}>
+					<Animated.View
+						entering={getFadeInDownAnimation(motionEnabled, 170)}
+						style={styles.bulletRow}
+					>
 						<Ionicons
 							name="checkmark-circle"
 							size={16}
@@ -114,8 +126,11 @@ export default function AuthChoiceScreen() {
 						<ThemedText type="subtitleLight">
 							Sync your diary and preferences
 						</ThemedText>
-					</View>
-					<View style={styles.bulletRow}>
+					</Animated.View>
+					<Animated.View
+						entering={getFadeInDownAnimation(motionEnabled, 210)}
+						style={styles.bulletRow}
+					>
 						<Ionicons
 							name="checkmark-circle"
 							size={16}
@@ -124,13 +139,14 @@ export default function AuthChoiceScreen() {
 						<ThemedText type="subtitleLight">
 							Get AI guidance with your saved data
 						</ThemedText>
-					</View>
+					</Animated.View>
 
 					<CustomPressable
 						borderRadius={borderRadius}
 						style={styles.primaryButton}
 						onPress={() => router.push("/(onboarding)/register")}
 						testID="auth-choice-create-account"
+						pressScale={0.98}
 					>
 						<ThemedText
 							type="defaultSemiBold"
@@ -145,6 +161,7 @@ export default function AuthChoiceScreen() {
 						style={styles.secondaryButton}
 						onPress={() => router.push("/(onboarding)/login")}
 						testID="auth-choice-signin"
+						pressScale={0.985}
 					>
 						<ThemedText type="defaultSemiBold">Sign In</ThemedText>
 					</CustomPressable>
@@ -156,12 +173,13 @@ export default function AuthChoiceScreen() {
 						style={styles.guestButton}
 						onPress={() => router.push("/(onboarding)/goal-wizard")}
 						testID="auth-choice-guest"
+						pressScale={0.99}
 					>
 						<ThemedText type="subtitleLight" color={theme.primary}>
 							Continue as Guest
 						</ThemedText>
 					</CustomPressable>
-				</View>
+				</Animated.View>
 			</View>
 		</View>
 	)

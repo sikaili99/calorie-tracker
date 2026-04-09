@@ -23,6 +23,12 @@ import { useSettings } from "@/providers/SettingsProvider"
 import { useSubscription } from "@/providers/SubscriptionProvider"
 import { borderRadius } from "@/constants/Theme"
 import Ionicons from "@expo/vector-icons/Ionicons"
+import Animated from "react-native-reanimated"
+import {
+	getFadeInDownAnimation,
+	getFadeOutUpAnimation,
+	useMotionEnabled,
+} from "@/hooks/useMotion"
 
 const STARTER_PROMPTS = [
 	"What should I eat next to hit my protein target?",
@@ -33,6 +39,7 @@ const STARTER_PROMPTS = [
 
 export default function CoachScreen() {
 	const theme = useThemeColor()
+	const motionEnabled = useMotionEnabled()
 	const today = useMemo(() => new Date(), [])
 	const { mealDiaryEntries } = useNutritionData({ date: today })
 	const { calculateTotal } = useSummary()
@@ -162,19 +169,27 @@ export default function CoachScreen() {
 				contentContainerStyle={styles.promptRow}
 				style={styles.promptScroller}
 			>
-				{STARTER_PROMPTS.map((prompt) => (
-					<CustomPressable
+				{STARTER_PROMPTS.map((prompt, index) => (
+					<Animated.View
 						key={prompt}
-						borderRadius={999}
-						style={[
-							styles.promptChip,
-							isLoading && styles.promptChipDisabled,
-						]}
-						onPress={() => handlePromptPress(prompt)}
-						disabled={isLoading}
+						entering={getFadeInDownAnimation(
+							motionEnabled,
+							Math.min(index * 45, 180)
+						)}
 					>
-						<ThemedText type="subtitle">{prompt}</ThemedText>
-					</CustomPressable>
+						<CustomPressable
+							borderRadius={999}
+							style={[
+								styles.promptChip,
+								isLoading && styles.promptChipDisabled,
+							]}
+							onPress={() => handlePromptPress(prompt)}
+							disabled={isLoading}
+							pressScale={0.98}
+						>
+							<ThemedText type="subtitle">{prompt}</ThemedText>
+						</CustomPressable>
+					</Animated.View>
 				))}
 			</ScrollView>
 		</View>
@@ -198,6 +213,7 @@ export default function CoachScreen() {
 				borderRadius={24}
 				onPress={clearHistory}
 				hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+				pressScale={0.9}
 			>
 				<Ionicons name="trash-outline" size={22} color={theme.text} />
 			</CustomPressable>
@@ -213,7 +229,10 @@ export default function CoachScreen() {
 
 			{/* Today's stats bar */}
 			{targetCalories && (
-				<View style={styles.statsCard}>
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 30, 300)}
+					style={styles.statsCard}
+				>
 					<View style={styles.statItem}>
 						<View style={styles.statLabelRow}>
 							<Ionicons
@@ -257,18 +276,26 @@ export default function CoachScreen() {
 							{Math.round(todaySummary.protein)}g
 						</ThemedText>
 					</View>
-				</View>
+				</Animated.View>
 			)}
 
 			{/* Message list or empty state */}
 			{messages.length === 0 ? (
 				<View style={styles.flex}>
-					<EmptyState
-						iconName="chatbubble-ellipses-outline"
-						title="Your AI Nutrition Coach"
-						subtitle="Ask for meal ideas, macro guidance, or help staying on track today."
-						style={styles.emptyState}
-					/>
+					<Animated.View
+						entering={getFadeInDownAnimation(
+							motionEnabled,
+							80,
+							320
+						)}
+					>
+						<EmptyState
+							iconName="chatbubble-ellipses-outline"
+							title="Your AI Nutrition Coach"
+							subtitle="Ask for meal ideas, macro guidance, or help staying on track today."
+							style={styles.emptyState}
+						/>
+					</Animated.View>
 					{renderPromptChips()}
 				</View>
 			) : (
@@ -277,14 +304,24 @@ export default function CoachScreen() {
 					style={styles.flex}
 					data={messages}
 					keyExtractor={(_, i) => i.toString()}
-					renderItem={({ item }) => <MessageBubble message={item} />}
+					renderItem={({ item, index }) => (
+						<MessageBubble message={item} index={index} />
+					)}
 					contentContainerStyle={styles.listContent}
 					onContentSizeChange={() =>
 						flatListRef.current?.scrollToEnd({ animated: true })
 					}
 					ListFooterComponent={
 						isLoading ? (
-							<View style={styles.typingRow}>
+							<Animated.View
+								entering={getFadeInDownAnimation(
+									motionEnabled,
+									0,
+									220
+								)}
+								exiting={getFadeOutUpAnimation(motionEnabled)}
+								style={styles.typingRow}
+							>
 								<Ionicons
 									name="sparkles-outline"
 									size={16}
@@ -301,14 +338,18 @@ export default function CoachScreen() {
 									color={theme.primary}
 									style={{ marginLeft: 8 }}
 								/>
-							</View>
+							</Animated.View>
 						) : null
 					}
 				/>
 			)}
 
 			{error && (
-				<View style={styles.errorBanner}>
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 0, 220)}
+					exiting={getFadeOutUpAnimation(motionEnabled)}
+					style={styles.errorBanner}
+				>
 					<ThemedText type="subtitleLight" color={theme.error}>
 						{error}
 					</ThemedText>
@@ -316,13 +357,14 @@ export default function CoachScreen() {
 						<CustomPressable
 							borderRadius={borderRadius}
 							onPress={() => handlePromptPress(retryPrompt)}
+							pressScale={0.96}
 						>
 							<ThemedText type="subtitleBold" color={theme.error}>
 								Try again
 							</ThemedText>
 						</CustomPressable>
 					</View>
-				</View>
+				</Animated.View>
 			)}
 
 			{messages.length > 0 && renderPromptChips()}

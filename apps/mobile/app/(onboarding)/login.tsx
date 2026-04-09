@@ -16,9 +16,42 @@ import { useSettings } from "@/providers/SettingsProvider"
 import { useDiarySync } from "@/hooks/useDiarySync"
 import { borderRadius } from "@/constants/Theme"
 import Ionicons from "@expo/vector-icons/Ionicons"
+import Animated from "react-native-reanimated"
+import {
+	getFadeInDownAnimation,
+	getFadeOutUpAnimation,
+	useMotionEnabled,
+} from "@/hooks/useMotion"
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+	if (typeof error !== "object" || error === null) {
+		return fallback
+	}
+
+	const response = Reflect.get(error, "response")
+	if (typeof response !== "object" || response === null) {
+		return fallback
+	}
+
+	const data = Reflect.get(response, "data")
+	if (typeof data !== "object" || data === null) {
+		return fallback
+	}
+
+	const message = Reflect.get(data, "message")
+	return typeof message === "string" && message.trim().length > 0
+		? message
+		: fallback
+}
+
+const isDismissedError = (error: unknown) =>
+	typeof error === "object" &&
+	error !== null &&
+	Reflect.get(error, "message") === "Dismissed"
 
 export default function LoginScreen() {
 	const theme = useThemeColor()
+	const motionEnabled = useMotionEnabled()
 	const { login, loginWithGoogle } = useAuth()
 	const { updateOnboardingComplete } = useSettings()
 	const { pullAll, pushPending } = useDiarySync()
@@ -156,8 +189,8 @@ export default function LoginScreen() {
 				.then(() => pushPending())
 				.catch(() => {})
 			router.replace(returnToPath ?? "/diary")
-		} catch (e: any) {
-			setError(e?.response?.data?.message ?? "Invalid email or password.")
+		} catch (error: unknown) {
+			setError(getErrorMessage(error, "Invalid email or password."))
 		} finally {
 			setIsLoading(false)
 		}
@@ -173,8 +206,8 @@ export default function LoginScreen() {
 				.then(() => pushPending())
 				.catch(() => {})
 			router.replace(returnToPath ?? "/diary")
-		} catch (e: any) {
-			if (e?.message !== "Dismissed") {
+		} catch (error: unknown) {
+			if (!isDismissedError(error)) {
 				setError("Google sign-in failed. Please try again.")
 			}
 		} finally {
@@ -196,7 +229,10 @@ export default function LoginScreen() {
 				contentContainerStyle={styles.inner}
 				keyboardShouldPersistTaps="handled"
 			>
-				<View style={styles.headerBlock}>
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 30, 300)}
+					style={styles.headerBlock}
+				>
 					<View style={styles.titleRow}>
 						<View style={styles.iconCircle}>
 							<Ionicons
@@ -219,9 +255,12 @@ export default function LoginScreen() {
 							? "Purchases are linked to your account so they can be restored on any device."
 							: "Sign in to sync your diary, targets, and AI coaching history."}
 					</ThemedText>
-				</View>
+				</Animated.View>
 
-				<View style={styles.formCard}>
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 110, 320)}
+					style={styles.formCard}
+				>
 					<View style={styles.inputGroup}>
 						<TextInput
 							style={styles.input}
@@ -245,7 +284,15 @@ export default function LoginScreen() {
 					</View>
 
 					{error && (
-						<View style={styles.errorBox}>
+						<Animated.View
+							entering={getFadeInDownAnimation(
+								motionEnabled,
+								0,
+								220
+							)}
+							exiting={getFadeOutUpAnimation(motionEnabled)}
+							style={styles.errorBox}
+						>
 							<Ionicons
 								name="alert-circle-outline"
 								size={16}
@@ -258,7 +305,7 @@ export default function LoginScreen() {
 							>
 								{error}
 							</ThemedText>
-						</View>
+						</Animated.View>
 					)}
 
 					<CustomPressable
@@ -267,6 +314,7 @@ export default function LoginScreen() {
 						onPress={handleSubmit}
 						disabled={isLoading || isGoogleLoading}
 						testID="login-submit"
+						pressScale={0.98}
 					>
 						<ThemedText
 							type="defaultSemiBold"
@@ -288,6 +336,7 @@ export default function LoginScreen() {
 						onPress={handleGoogleLogin}
 						disabled={isLoading || isGoogleLoading}
 						testID="login-google"
+						pressScale={0.985}
 					>
 						<Ionicons
 							name="logo-google"
@@ -307,32 +356,38 @@ export default function LoginScreen() {
 							style={styles.guestButton}
 							onPress={handleContinueAsGuest}
 							testID="login-guest"
+							pressScale={0.99}
 						>
 							<ThemedText type="default">
 								Continue as Guest
 							</ThemedText>
 						</CustomPressable>
 					)}
-				</View>
+				</Animated.View>
 
-				<CustomPressable
-					borderRadius={borderRadius}
-					style={styles.linkButton}
-					onPress={() => {
-						if (returnToPath) {
-							router.replace({
-								pathname: "/(onboarding)/register",
-								params: { returnTo: returnToPath },
-							})
-							return
-						}
-						router.replace("/(onboarding)/register")
-					}}
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 160)}
 				>
-					<ThemedText type="subtitleLight" color={theme.primary}>
-						Don&apos;t have an account? Create one
-					</ThemedText>
-				</CustomPressable>
+					<CustomPressable
+						borderRadius={borderRadius}
+						style={styles.linkButton}
+						onPress={() => {
+							if (returnToPath) {
+								router.replace({
+									pathname: "/(onboarding)/register",
+									params: { returnTo: returnToPath },
+								})
+								return
+							}
+							router.replace("/(onboarding)/register")
+						}}
+						pressScale={0.99}
+					>
+						<ThemedText type="subtitleLight" color={theme.primary}>
+							Don&apos;t have an account? Create one
+						</ThemedText>
+					</CustomPressable>
+				</Animated.View>
 			</ScrollView>
 		</KeyboardAvoidingView>
 	)

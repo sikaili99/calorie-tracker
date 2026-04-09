@@ -16,9 +16,42 @@ import { useSettings } from "@/providers/SettingsProvider"
 import { useDiarySync } from "@/hooks/useDiarySync"
 import { borderRadius } from "@/constants/Theme"
 import Ionicons from "@expo/vector-icons/Ionicons"
+import Animated from "react-native-reanimated"
+import {
+	getFadeInDownAnimation,
+	getFadeOutUpAnimation,
+	useMotionEnabled,
+} from "@/hooks/useMotion"
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+	if (typeof error !== "object" || error === null) {
+		return fallback
+	}
+
+	const response = Reflect.get(error, "response")
+	if (typeof response !== "object" || response === null) {
+		return fallback
+	}
+
+	const data = Reflect.get(response, "data")
+	if (typeof data !== "object" || data === null) {
+		return fallback
+	}
+
+	const message = Reflect.get(data, "message")
+	return typeof message === "string" && message.trim().length > 0
+		? message
+		: fallback
+}
+
+const isDismissedError = (error: unknown) =>
+	typeof error === "object" &&
+	error !== null &&
+	Reflect.get(error, "message") === "Dismissed"
 
 export default function RegisterScreen() {
 	const theme = useThemeColor()
+	const motionEnabled = useMotionEnabled()
 	const { register, loginWithGoogle } = useAuth()
 	const { updateOnboardingComplete } = useSettings()
 	const { pushPending } = useDiarySync()
@@ -171,10 +204,9 @@ export default function RegisterScreen() {
 				return
 			}
 			router.push("/(onboarding)/goal-wizard")
-		} catch (e: any) {
+		} catch (error: unknown) {
 			setError(
-				e?.response?.data?.message ??
-					"Registration failed. Please try again."
+				getErrorMessage(error, "Registration failed. Please try again.")
 			)
 		} finally {
 			setIsLoading(false)
@@ -193,8 +225,8 @@ export default function RegisterScreen() {
 				return
 			}
 			router.push("/(onboarding)/goal-wizard")
-		} catch (e: any) {
-			if (e?.message !== "Dismissed") {
+		} catch (error: unknown) {
+			if (!isDismissedError(error)) {
 				setError("Google sign-in failed. Please try again.")
 			}
 		} finally {
@@ -211,7 +243,10 @@ export default function RegisterScreen() {
 				contentContainerStyle={styles.inner}
 				keyboardShouldPersistTaps="handled"
 			>
-				<View style={styles.headerBlock}>
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 30, 300)}
+					style={styles.headerBlock}
+				>
 					<View style={styles.titleRow}>
 						<View style={styles.iconCircle}>
 							<Ionicons
@@ -234,9 +269,12 @@ export default function RegisterScreen() {
 							? "Premium purchases are tied to your account for restore across devices."
 							: "You can still continue as guest later if needed."}
 					</ThemedText>
-				</View>
+				</Animated.View>
 
-				<View style={styles.formCard}>
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 110, 320)}
+					style={styles.formCard}
+				>
 					<View style={styles.nameRow}>
 						<TextInput
 							style={styles.nameInput}
@@ -279,7 +317,15 @@ export default function RegisterScreen() {
 					/>
 
 					{error && (
-						<View style={styles.errorBox}>
+						<Animated.View
+							entering={getFadeInDownAnimation(
+								motionEnabled,
+								0,
+								220
+							)}
+							exiting={getFadeOutUpAnimation(motionEnabled)}
+							style={styles.errorBox}
+						>
 							<Ionicons
 								name="alert-circle-outline"
 								size={16}
@@ -292,7 +338,7 @@ export default function RegisterScreen() {
 							>
 								{error}
 							</ThemedText>
-						</View>
+						</Animated.View>
 					)}
 
 					<CustomPressable
@@ -301,6 +347,7 @@ export default function RegisterScreen() {
 						onPress={handleSubmit}
 						disabled={isLoading || isGoogleLoading}
 						testID="register-submit"
+						pressScale={0.98}
 					>
 						<ThemedText
 							type="defaultSemiBold"
@@ -322,6 +369,7 @@ export default function RegisterScreen() {
 						onPress={handleGoogleRegister}
 						disabled={isLoading || isGoogleLoading}
 						testID="register-google"
+						pressScale={0.985}
 					>
 						<Ionicons
 							name="logo-google"
@@ -334,26 +382,31 @@ export default function RegisterScreen() {
 								: "Continue with Google"}
 						</ThemedText>
 					</CustomPressable>
-				</View>
+				</Animated.View>
 
-				<CustomPressable
-					borderRadius={borderRadius}
-					style={styles.linkButton}
-					onPress={() => {
-						if (returnToPath) {
-							router.replace({
-								pathname: "/(onboarding)/login",
-								params: { returnTo: returnToPath },
-							})
-							return
-						}
-						router.replace("/(onboarding)/login")
-					}}
+				<Animated.View
+					entering={getFadeInDownAnimation(motionEnabled, 160)}
 				>
-					<ThemedText type="subtitleLight" color={theme.primary}>
-						Already have an account? Sign In
-					</ThemedText>
-				</CustomPressable>
+					<CustomPressable
+						borderRadius={borderRadius}
+						style={styles.linkButton}
+						onPress={() => {
+							if (returnToPath) {
+								router.replace({
+									pathname: "/(onboarding)/login",
+									params: { returnTo: returnToPath },
+								})
+								return
+							}
+							router.replace("/(onboarding)/login")
+						}}
+						pressScale={0.99}
+					>
+						<ThemedText type="subtitleLight" color={theme.primary}>
+							Already have an account? Sign In
+						</ThemedText>
+					</CustomPressable>
+				</Animated.View>
 			</ScrollView>
 		</KeyboardAvoidingView>
 	)
