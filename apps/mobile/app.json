@@ -10,14 +10,16 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.sikaili99.calorietracker"
+      "bundleIdentifier": "com.sikaili99.calorietracker",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/foreground.png",
         "backgroundColor": "#111928"
       },
-      "package": "com.sikaili99.calorietracker"
+      "package": "com.sikaili99.calorietracker",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",

@@ -53,6 +53,9 @@ Mobile public env values are documented in root [`.env.example`](./.env.example)
 - `EXPO_PUBLIC_RC_IOS_API_KEY`
 - `EXPO_PUBLIC_RC_ANDROID_API_KEY`
 - `EXPO_PUBLIC_RC_ENTITLEMENT_ID`
+- `EXPO_PUBLIC_PRIVACY_POLICY_URL`
+- `EXPO_PUBLIC_TERMS_URL`
+- `EXPO_PUBLIC_SUPPORT_URL`
 
 Additional backend values for premium enforcement:
 - `REVENUECAT_SECRET_API_KEY`
@@ -107,6 +110,16 @@ npm run dev
 
 `npm run dev` starts backend + mobile together.
 
+Release helpers (from `apps/mobile`):
+
+```bash
+npm run release:check-env
+npm run release:build:ios
+npm run release:build:android
+npm run release:submit:ios
+npm run release:submit:android
+```
+
 ## Auth and Google Sign-In Notes
 
 - Backend validates Google ID tokens against `GOOGLE_CLIENT_ID`.
@@ -137,6 +150,26 @@ Testing notes:
 - Real billing does not work in Expo Go. Use a development build, TestFlight, or Play internal testing.
 - iOS: sandbox tester account / TestFlight sandbox renewals.
 - Android: internal testing track + license testers.
+
+## Store Readiness Checklist
+
+Code/config readiness in this repo:
+- Native app identity aligned to `com.sikaili99.calorietracker` and app scheme `calorietracker`.
+- EAS config added at `apps/mobile/eas.json` with `development`, `preview`, and `production` profiles.
+- Legal links are config-driven in mobile (`Privacy Policy`, `Terms`, `Support`).
+- Account deletion endpoint is available at `DELETE /auth/me` (JWT required), with soft delete/anonymization.
+
+Before submitting builds:
+1. Set mobile release env values (all `EXPO_PUBLIC_*` keys above) and run `npm run release:check-env` in `apps/mobile`.
+2. Ensure `EXPO_PUBLIC_BACKEND_URL` points to production HTTPS backend (not localhost).
+3. Ensure RevenueCat iOS/Android public SDK keys are set and entitlement is `premium`.
+4. Ensure backend env includes `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `REVENUECAT_SECRET_API_KEY`, `REVENUECAT_ENTITLEMENT_ID`.
+
+Store-console tasks (outside repo):
+1. Configure App Store Connect and Play Console listing metadata, screenshots, and ratings.
+2. Configure subscriptions/products and RevenueCat offering mapping for monthly + annual plans.
+3. Publish and reference production Privacy Policy / Terms / Support URLs.
+4. Complete App Store privacy questionnaire and Google Play Data Safety form.
 
 ## Project Layout
 

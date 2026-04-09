@@ -86,9 +86,9 @@ android {
     buildToolsVersion (rootProject.ext.has('buildToolsVersion') ? rootProject.ext.buildToolsVersion : '36.0.0')
     compileSdk Integer.parseInt(rootProject.ext.has('compileSdkVersion') ? rootProject.ext.compileSdkVersion.toString() : '36')
 
-    namespace 'com.antomanc.simplecalorietracker'
+    namespace 'com.sikaili99.calorietracker'
     defaultConfig {
-        applicationId 'com.antomanc.simplecalorietracker'
+        applicationId 'com.sikaili99.calorietracker'
         minSdkVersion Integer.parseInt(rootProject.ext.has('minSdkVersion') ? rootProject.ext.minSdkVersion.toString() : '24')
         targetSdkVersion Integer.parseInt(rootProject.ext.has('targetSdkVersion') ? rootProject.ext.targetSdkVersion.toString() : '36')
         versionCode 1

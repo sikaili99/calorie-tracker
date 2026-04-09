@@ -1,4 +1,4 @@
-package com.antomanc.simplecalorietracker
+package com.sikaili99.calorietracker
 
 import android.app.Application
 import android.content.res.Configuration

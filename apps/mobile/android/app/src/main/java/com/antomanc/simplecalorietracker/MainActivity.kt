@@ -1,4 +1,4 @@
-package com.antomanc.simplecalorietracker
+package com.sikaili99.calorietracker
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build
