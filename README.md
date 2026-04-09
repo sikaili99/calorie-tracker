@@ -151,6 +151,71 @@ Testing notes:
 - iOS: sandbox tester account / TestFlight sandbox renewals.
 - Android: internal testing track + license testers.
 
+## Deployment (VPS with Docker)
+
+The backend ships with a multi-stage Dockerfile and a `docker-compose.yml` that starts PostgreSQL + the backend together.
+
+### Prerequisites
+
+- Ubuntu 24 LTS VPS (DigitalOcean, Hetzner, etc.)
+- Docker and Docker Compose plugin: `apt install docker.io docker-compose-plugin`
+
+### Steps
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/sikaili99/calorie-tracker.git
+cd calorie-tracker
+
+# 2. Create your production .env
+cp .env.example .env
+# Edit .env: set JWT_SECRET, GOOGLE_CLIENT_ID, ANTHROPIC_API_KEY,
+# REVENUECAT_SECRET_API_KEY, POSTGRES_PASSWORD (use a strong random value)
+
+# 3. Build and start
+docker compose up -d --build
+
+# 4. Verify
+curl http://localhost:3000/health
+```
+
+Prisma migrations run automatically on container startup (`prisma migrate deploy`).
+
+### Reverse proxy (Nginx example)
+
+Put Nginx in front of port 3000 and terminate TLS with Let's Encrypt:
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name api.yourdomain.com;
+
+    ssl_certificate /etc/letsencrypt/live/api.yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.yourdomain.com/privkey.pem;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+After setting up TLS, update `EXPO_PUBLIC_BACKEND_URL` in your EAS secrets to the HTTPS domain.
+
+### Useful commands
+
+```bash
+# View logs
+docker compose logs -f backend
+
+# Manual migration (if needed)
+docker compose exec backend npx prisma migrate deploy
+
+# Restart backend only
+docker compose restart backend
+```
+
 ## Store Readiness Checklist
 
 Code/config readiness in this repo:
