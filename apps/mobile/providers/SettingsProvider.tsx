@@ -33,6 +33,7 @@ interface SettingsContextProps {
 	usdaApiKey: string | undefined
 	userUuid: string | undefined
 	notificationsEnabled: boolean
+	hapticsEnabled: boolean
 	reminderHour: number
 	reminderMinute: number
 	onboardingComplete: boolean
@@ -50,6 +51,7 @@ interface SettingsContextProps {
 	updateTargetFatPercentage: (value: number) => void
 	updateUsdaApiKey: (value?: string) => void
 	updateNotificationsEnabled: (value: boolean) => void
+	updateHapticsEnabled: (value: boolean) => void
 	updateReminderTime: (hour: number, minute: number) => void
 	updateOnboardingComplete: (value: boolean) => Promise<void>
 	updateUserProfile: (profile: UserProfile) => Promise<void>
@@ -71,6 +73,7 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 		usdaApiKey: string | undefined
 		userUuid: string | undefined
 		notificationsEnabled: boolean
+		hapticsEnabled: boolean
 		reminderHour: number
 		reminderMinute: number
 		onboardingComplete: boolean
@@ -90,6 +93,7 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 		usdaApiKey: undefined,
 		userUuid: undefined,
 		notificationsEnabled: false,
+		hapticsEnabled: true,
 		reminderHour: 20,
 		reminderMinute: 0,
 		onboardingComplete: false,
@@ -175,6 +179,11 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 					boolean | number
 				>("NOTIFICATIONS_ENABLED", false)
 				const notificationsEnabled = Boolean(notificationsEnabledRaw)
+				const hapticsEnabledRaw = await getStoredSetting<boolean | number>(
+					"HAPTICS_ENABLED",
+					true
+				)
+				const hapticsEnabled = Boolean(hapticsEnabledRaw)
 				const reminderHour = await getStoredSetting("REMINDER_HOUR", 20)
 				const reminderMinute = await getStoredSetting(
 					"REMINDER_MINUTE",
@@ -227,6 +236,7 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 					usdaApiKey,
 					userUuid,
 					notificationsEnabled,
+					hapticsEnabled,
 					reminderHour,
 					reminderMinute,
 					onboardingComplete,
@@ -269,7 +279,14 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 		[updateSetting, settings.reminderHour, settings.reminderMinute]
 	)
 
-	const updateReminderTime = useCallback(
+	const updateHapticsEnabled = useCallback(
+		(value: boolean) => {
+			void updateSetting('HAPTICS_ENABLED', 'hapticsEnabled', value)
+		},
+		[updateSetting]
+	)
+
+		const updateReminderTime = useCallback(
 		async (hour: number, minute: number) => {
 			await AsyncStorage.setItem("REMINDER_HOUR", JSON.stringify(hour))
 			await AsyncStorage.setItem(
@@ -345,6 +362,7 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 			updateUsdaApiKey: (value?: string) =>
 				updateSetting("USDA_API_KEY", "usdaApiKey", value),
 			updateNotificationsEnabled,
+			updateHapticsEnabled,
 			updateReminderTime,
 			updateOnboardingComplete,
 			updateUserProfile,
@@ -354,6 +372,7 @@ export const SettingsProvider: React.FC<React.PropsWithChildren> = ({
 			settings,
 			updateSetting,
 			updateNotificationsEnabled,
+			updateHapticsEnabled,
 			updateReminderTime,
 			updateOnboardingComplete,
 			updateUserProfile,

@@ -8,14 +8,15 @@ import { useSettings } from "@/providers/SettingsProvider"
 
 export default function TabLayout() {
 	const theme = useThemeColor()
-	const { onboardingComplete, settingsLoaded } = useSettings()
+	const { onboardingComplete, settingsLoaded, hapticsEnabled } = useSettings()
 
 	if (!settingsLoaded) return <View style={{ flex: 1 }} />
 	if (!onboardingComplete) return <Redirect href="/welcome" />
 
 	const handleTabPress = () => {
-		// TODO add a setting to enable/disable haptics
-		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+		if (hapticsEnabled) {
+			Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+		}
 	}
 
 	const styles = useMemo(

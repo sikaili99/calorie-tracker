@@ -302,6 +302,7 @@ export default function Index() {
 		targetFatPercentage,
 		targetProteinPercentage,
 		notificationsEnabled,
+		hapticsEnabled,
 		reminderHour,
 		reminderMinute,
 		updateTargetCalories,
@@ -309,6 +310,7 @@ export default function Index() {
 		updateTargetFatPercentage,
 		updateTargetProteinPercentage,
 		updateNotificationsEnabled,
+		updateHapticsEnabled,
 		updateReminderTime,
 		themeMode,
 		updateThemeMode,
@@ -967,7 +969,39 @@ export default function Index() {
 						</View>
 					</View>
 
-					{/* Legal */}
+					
+					{/* Haptics */}
+					<View>
+						<ThemedText
+							type="subtitleBold"
+							style={styles.sectionLabel}
+						>
+							HAPTICS
+						</ThemedText>
+						<View style={styles.reminderCard}>
+							<View style={styles.reminderToggleRow}>
+								<View style={styles.notificationLabel}>
+									<ThemedText type="defaultSemiBold">
+										Vibration Feedback
+									</ThemedText>
+									<ThemedText type="subtitleLight">
+										Feel a tap when switching tabs
+									</ThemedText>
+								</View>
+								<Switch
+									value={hapticsEnabled}
+									onValueChange={updateHapticsEnabled}
+									trackColor={reminderSwitchTrackColor}
+									thumbColor={reminderSwitchThumbColor}
+									ios_backgroundColor={
+										reminderSwitchTrackColor.false
+									}
+								/>
+							</View>
+						</View>
+					</View>
+
+{/* Legal */}
 					<View>
 						<ThemedText
 							type="subtitleBold"
