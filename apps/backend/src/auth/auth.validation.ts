@@ -65,3 +65,21 @@ export function validateLogoutRequest(body: unknown): LogoutRequest {
 	const obj = asObject(body)
 	return { refreshToken: requireTrimmedString(obj, "refreshToken") }
 }
+
+export function validateAppleAuthRequest(body: unknown): {
+	idToken: string
+	firstName?: string
+	lastName?: string
+} {
+	const obj = asObject(body)
+	const idToken = requireTrimmedString(obj, "idToken")
+	const firstName =
+		typeof obj.firstName === "string" && obj.firstName.trim()
+			? obj.firstName.trim()
+			: undefined
+	const lastName =
+		typeof obj.lastName === "string" && obj.lastName.trim()
+			? obj.lastName.trim()
+			: undefined
+	return { idToken, firstName, lastName }
+}

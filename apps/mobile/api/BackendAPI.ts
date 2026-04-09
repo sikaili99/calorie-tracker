@@ -231,6 +231,19 @@ export const BackendAPI = {
 		return response.data
 	},
 
+	async appleAuth(
+		idToken: string,
+		firstName?: string,
+		lastName?: string
+	): Promise<AuthResponse> {
+		const response = await client.post<AuthResponse>("/auth/apple", {
+			idToken,
+			firstName,
+			lastName,
+		})
+		return response.data
+	},
+
 	async refreshTokens(refreshToken: string): Promise<AuthResponse> {
 		// Use a raw axios call to avoid interceptor loop
 		const response = await axios.post<AuthResponse>(

@@ -1,6 +1,7 @@
-import React from "react"
-import { View, StyleSheet } from "react-native"
+import React, { useState } from "react"
+import { View, StyleSheet, Platform, Alert } from "react-native"
 import { router } from "expo-router"
+import * as AppleAuthentication from "expo-apple-authentication"
 import { useThemeColor } from "@/hooks/useThemeColor"
 import { ThemedText } from "@/components/ThemedText"
 import { CustomPressable } from "@/components/CustomPressable"
@@ -8,10 +9,32 @@ import { borderRadius } from "@/constants/Theme"
 import Ionicons from "@expo/vector-icons/Ionicons"
 import Animated from "react-native-reanimated"
 import { getFadeInDownAnimation, useMotionEnabled } from "@/hooks/useMotion"
+import { useAuth } from "@/providers/AuthProvider"
 
 export default function AuthChoiceScreen() {
 	const theme = useThemeColor()
 	const motionEnabled = useMotionEnabled()
+	const { loginWithApple } = useAuth()
+	const [isAppleLoading, setIsAppleLoading] = useState(false)
+
+	const handleAppleSignIn = async () => {
+		if (isAppleLoading) return
+		setIsAppleLoading(true)
+		try {
+			await loginWithApple()
+			router.replace("/(onboarding)/goal-wizard")
+		} catch (err: unknown) {
+			const code = (err as { code?: string }).code
+			if (code !== "ERR_REQUEST_CANCELED") {
+				Alert.alert(
+					"Sign in failed",
+					"Could not sign in with Apple. Please try again."
+				)
+			}
+		} finally {
+			setIsAppleLoading(false)
+		}
+	}
 
 	const styles = StyleSheet.create({
 		container: {
@@ -165,6 +188,20 @@ export default function AuthChoiceScreen() {
 					>
 						<ThemedText type="defaultSemiBold">Sign In</ThemedText>
 					</CustomPressable>
+
+					{Platform.OS === "ios" && (
+						<AppleAuthentication.AppleAuthenticationButton
+							buttonType={
+								AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN
+							}
+							buttonStyle={
+								AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+							}
+							cornerRadius={borderRadius}
+							style={{ height: 52 }}
+							onPress={handleAppleSignIn}
+						/>
+					)}
 
 					<View style={styles.subtleDivider} />
 

@@ -7,8 +7,10 @@ import React, {
 	useRef,
 	useState,
 } from "react"
+import { Platform } from "react-native"
 import * as Google from "expo-auth-session/providers/google"
 import * as WebBrowser from "expo-web-browser"
+import * as AppleAuthentication from "expo-apple-authentication"
 import { tokenStorage } from "@/utils/tokenStorage"
 import { BackendAPI } from "@/api/BackendAPI"
 import type { AuthUser } from "@calorie-tracker/shared-types"
@@ -27,6 +29,7 @@ interface AuthContextProps {
 		password: string
 	) => Promise<void>
 	loginWithGoogle: () => Promise<void>
+	loginWithApple: () => Promise<void>
 	logout: () => Promise<void>
 	deleteAccount: () => Promise<void>
 }
@@ -138,6 +141,27 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({
 		})
 	}, [googlePromptAsync])
 
+	const loginWithApple = useCallback(async (): Promise<void> => {
+		if (Platform.OS !== "ios") {
+			throw new Error("Sign in with Apple is only available on iOS")
+		}
+		const credential = await AppleAuthentication.signInAsync({
+			requestedScopes: [
+				AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+				AppleAuthentication.AppleAuthenticationScope.EMAIL,
+			],
+		})
+		if (!credential.identityToken) {
+			throw new Error("No identity token from Apple")
+		}
+		const firstName = credential.fullName?.givenName ?? undefined
+		const lastName = credential.fullName?.familyName ?? undefined
+		const { user: u, accessToken, refreshToken } =
+			await BackendAPI.appleAuth(credential.identityToken, firstName, lastName)
+		await tokenStorage.saveTokens(accessToken, refreshToken)
+		setUser(u)
+	}, [])
+
 	const logout = useCallback(async () => {
 		try {
 			const refreshToken = await tokenStorage.getRefreshToken()
@@ -167,6 +191,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({
 			login,
 			register,
 			loginWithGoogle,
+			loginWithApple,
 			logout,
 			deleteAccount,
 		}),
@@ -176,6 +201,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({
 			login,
 			register,
 			loginWithGoogle,
+			loginWithApple,
 			logout,
 			deleteAccount,
 		]

@@ -9,6 +9,7 @@ import { JwtService } from "@nestjs/jwt"
 import * as bcrypt from "bcrypt"
 import { randomUUID } from "crypto"
 import { OAuth2Client, type LoginTicket } from "google-auth-library"
+import * as appleSignin from "apple-signin-auth"
 import { PrismaService } from "../prisma/prisma.service"
 import type {
 	AuthResponse,
@@ -167,6 +168,65 @@ export class AuthService {
 		}
 	}
 
+	async appleAuth(
+		idToken: string,
+		firstName?: string,
+		lastName?: string
+	): Promise<AuthResponse> {
+		let payload: { sub: string; email?: string }
+		try {
+			payload = await appleSignin.verifyIdToken(idToken, {
+				ignoreExpiration: false,
+			})
+		} catch {
+			throw new UnauthorizedException("Invalid Apple token")
+		}
+
+		const appleId = payload.sub
+		const email = payload.email?.toLowerCase()
+		const resolvedFirstName = firstName ?? "Apple"
+		const resolvedLastName = lastName ?? "User"
+
+		try {
+			const userByAppleId = await this.prisma.user.findFirst({
+				where: { appleId, deletedAt: null },
+			})
+
+			if (userByAppleId) {
+				return this.generateTokens(this.toAuthUser(userByAppleId))
+			}
+
+			if (email) {
+				const userByEmail = await this.prisma.user.findFirst({
+					where: { email, deletedAt: null },
+				})
+				if (userByEmail) {
+					const linked = await this.prisma.user.update({
+						where: { id: userByEmail.id },
+						data: { appleId },
+					})
+					return this.generateTokens(this.toAuthUser(linked))
+				}
+			}
+
+			const createdUser = await this.prisma.user.create({
+				data: {
+					appleId,
+					email: email ?? `apple+${appleId}@private.calorietracker.app`,
+					firstName: resolvedFirstName,
+					lastName: resolvedLastName,
+				},
+			})
+			return this.generateTokens(this.toAuthUser(createdUser))
+		} catch (error: unknown) {
+			this.throwIfUniqueConstraint(
+				error,
+				"Apple account could not be linked due to a conflicting account"
+			)
+			throw error
+		}
+	}
+
 	async refresh(token: string): Promise<AuthResponse> {
 		const stored = await this.prisma.refreshToken.findUnique({
 			where: { token },
@@ -219,6 +279,7 @@ export class AuthService {
 					lastName: "Account",
 					password: null,
 					googleId: null,
+					appleId: null,
 					deletedAt: now,
 					anonymizedAt: now,
 				},

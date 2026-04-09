@@ -13,6 +13,7 @@ import { AuthService } from "./auth.service"
 import { LocalAuthGuard } from "./guards/local-auth.guard"
 import { JwtAuthGuard } from "./guards/jwt-auth.guard"
 import {
+	validateAppleAuthRequest,
 	validateGoogleAuthRequest,
 	validateLogoutRequest,
 	validateRefreshRequest,
@@ -43,6 +44,13 @@ export class AuthController {
 	googleAuth(@Body() body: unknown) {
 		const dto = validateGoogleAuthRequest(body)
 		return this.authService.googleAuth(dto.idToken)
+	}
+
+	@Post("apple")
+	@HttpCode(HttpStatus.OK)
+	appleAuth(@Body() body: unknown) {
+		const dto = validateAppleAuthRequest(body)
+		return this.authService.appleAuth(dto.idToken, dto.firstName, dto.lastName)
 	}
 
 	@Post("refresh")
