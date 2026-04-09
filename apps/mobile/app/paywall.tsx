@@ -87,10 +87,26 @@ export default function PaywallScreen() {
 
 	const selectedPlanPackage = getPackageByPlan(selectedPlan)
 	const selectedPlanPrice = pricesByPlan[selectedPlan]
-	const selectedPlanCta =
-		selectedPlan === "Annual"
-			? "Start Free Trial — Annual"
-			: "Subscribe — Monthly"
+
+	const selectedIntro = selectedPlanPackage?.product.introPrice ?? null
+	const hasTrialOffer = selectedIntro !== null && selectedIntro.price === 0
+
+	const anyTrialOffer =
+		(monthlyPackage?.product.introPrice?.price === 0) ||
+		(annualPackage?.product.introPrice?.price === 0)
+
+	const trialDurationLabel = useMemo(() => {
+		const intro =
+			annualPackage?.product.introPrice ?? monthlyPackage?.product.introPrice
+		if (!intro || intro.price !== 0) return null
+		const unit = intro.periodUnit.toLowerCase()
+		const n = intro.periodNumberOfUnits
+		return `${n}-${unit} free trial`
+	}, [annualPackage, monthlyPackage])
+
+	const selectedPlanCta = hasTrialOffer
+		? "Start Free Trial"
+		: `Subscribe — ${selectedPlan}`
 
 	const loginReturnTo =
 		featureName && featureName.trim().length > 0
@@ -178,7 +194,7 @@ export default function PaywallScreen() {
 			marginTop: 3,
 		},
 		ctaSubtext: {
-			marginTop: -2,
+			marginTop: 8,
 		},
 		restoreButton: {
 			alignItems: "center",
@@ -349,11 +365,13 @@ export default function PaywallScreen() {
 				>
 					<View style={styles.trialBadge}>
 						<ThemedText type="subtitleBold" color={theme.primary}>
-							7-day free trial
+							{trialDurationLabel ?? "Go Premium"}
 						</ThemedText>
 					</View>
 					<ThemedText type="title" centered>
-						Start Your Premium Trial
+						{anyTrialOffer
+							? "Start Your Premium Trial"
+							: "Upgrade to Premium"}
 					</ThemedText>
 					<ThemedText type="subtitleLight" centered>
 						{featureName
@@ -489,9 +507,9 @@ export default function PaywallScreen() {
 						centered
 						style={styles.ctaSubtext}
 					>
-						{selectedPlan === "Annual"
-							? `After trial: ${selectedPlanPrice}`
-							: `Billed immediately: ${selectedPlanPrice}`}
+						{hasTrialOffer
+							? `Free for ${selectedIntro!.periodNumberOfUnits} ${selectedIntro!.periodUnit.toLowerCase()}${selectedIntro!.periodNumberOfUnits > 1 ? "s" : ""}, then ${selectedPlanPrice}`
+							: `Renews at ${selectedPlanPrice}`}
 					</ThemedText>
 				</Animated.View>
 
