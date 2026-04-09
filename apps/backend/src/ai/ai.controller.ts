@@ -1,4 +1,5 @@
 import { Controller, Post, Body, UseGuards, Request } from "@nestjs/common"
+import { Throttle } from "@nestjs/throttler"
 import { AiService } from "./ai.service"
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard"
 import { PremiumGuard } from "../premium/premium.guard"
@@ -9,6 +10,7 @@ import type {
 	WeeklyReportRequest,
 } from "@calorie-tracker/shared-types"
 
+@Throttle({ default: { ttl: 60000, limit: 20 } })
 @Controller("ai")
 @UseGuards(JwtAuthGuard, PremiumGuard)
 export class AiController {
