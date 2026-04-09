@@ -23,6 +23,7 @@ import { LoadingState } from "@/components/LoadingState"
 import { CustomPressable } from "@/components/CustomPressable"
 import type { ThemeMode } from "@/providers/SettingsProvider"
 import { useAuth } from "@/providers/AuthProvider"
+import { useSubscription } from "@/providers/SubscriptionProvider"
 import {
 	PRIVACY_POLICY_URL,
 	SUPPORT_URL,
@@ -296,6 +297,7 @@ export default function Index() {
 	const theme = useThemeColor()
 	const colorScheme = useResolvedColorScheme()
 	const { isAuthenticated, logout, deleteAccount } = useAuth()
+	const { refreshPremiumStatus, isPremium } = useSubscription()
 	const {
 		targetCalories,
 		targetCarbsPercentage,
@@ -320,6 +322,7 @@ export default function Index() {
 	const [timePickerVisible, setTimePickerVisible] = useState(false)
 	const [isSigningOut, setIsSigningOut] = useState(false)
 	const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+	const [isRefreshingPremium, setIsRefreshingPremium] = useState(false)
 
 	const styles = useMemo(
 		() =>
@@ -582,6 +585,27 @@ export default function Index() {
 		},
 		[]
 	)
+
+	const handleRefreshPremium = useCallback(async () => {
+		if (isRefreshingPremium) return
+		setIsRefreshingPremium(true)
+		try {
+			await refreshPremiumStatus()
+			Alert.alert(
+				"Subscription Refreshed",
+				isPremium
+					? "Your premium subscription is active."
+					: "No active premium subscription found."
+			)
+		} catch {
+			Alert.alert(
+				"Refresh Failed",
+				"Could not refresh subscription status. Please try again."
+			)
+		} finally {
+			setIsRefreshingPremium(false)
+		}
+	}, [isRefreshingPremium, refreshPremiumStatus, isPremium])
 
 	const handleSignOut = useCallback(async () => {
 		if (isSigningOut) return

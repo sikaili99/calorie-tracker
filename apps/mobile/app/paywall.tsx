@@ -57,16 +57,20 @@ export default function PaywallScreen() {
 	const {
 		isSubscriptionReady,
 		isSubscriptionConfigured,
+		hasMissingProducts,
 		monthlyPackage,
 		annualPackage,
 		getPackageByPlan,
 		purchase,
 		restore,
-		refresh,
+		refreshOfferings,
 	} = useSubscription()
 	const { featureName } = useLocalSearchParams<{ featureName?: string }>()
 	const [isStartingTrial, setIsStartingTrial] = useState(false)
 	const [isRestoringPurchase, setIsRestoringPurchase] = useState(false)
+	const isLoadingOfferings =
+		!isSubscriptionReady ||
+		(isSubscriptionConfigured && !hasMissingProducts && !monthlyPackage && !annualPackage)
 	const recommendedPlan: BillingPlan = "Annual"
 	const [selectedPlan, setSelectedPlan] =
 		useState<BillingPlan>(recommendedPlan)
@@ -253,8 +257,16 @@ export default function PaywallScreen() {
 			return
 		}
 
+		if (hasMissingProducts) {
+			Alert.alert(
+				"Products Not Configured",
+				"Subscription products are not set up in RevenueCat yet. Please try again later."
+			)
+			return
+		}
+
 		if (!selectedPlanPackage) {
-			await refresh().catch(() => undefined)
+			await refreshOfferings().catch(() => undefined)
 			Alert.alert(
 				"Plans Unavailable",
 				"We could not load subscription plans. Please try again."
@@ -372,7 +384,7 @@ export default function PaywallScreen() {
 					))}
 				</View>
 
-				<View style={{ gap: 10 }}>
+				<View style={{ gap: 10, opacity: isLoadingOfferings ? 0.4 : 1 }}>
 					{(["Monthly", "Annual"] as BillingPlan[]).map(
 						(plan, index) => {
 							const isRecommended = plan === recommendedPlan
@@ -408,7 +420,9 @@ export default function PaywallScreen() {
 												type="subtitleLight"
 												style={styles.valueText}
 											>
-												{pricesByPlan[plan]}
+												{isLoadingOfferings
+										? "Loading…"
+										: pricesByPlan[plan]}
 											</ThemedText>
 										</View>
 
@@ -466,8 +480,8 @@ export default function PaywallScreen() {
 					<PrimaryButton
 						label={selectedPlanCta}
 						onPress={handleStartTrial}
-						isLoading={isStartingTrial || !isSubscriptionReady}
-						disabled={!isSubscriptionReady}
+						isLoading={isStartingTrial || isLoadingOfferings}
+						disabled={isLoadingOfferings}
 						pressScale={0.985}
 					/>
 					<ThemedText

@@ -23,9 +23,12 @@ interface SubscriptionContextProps {
 	isPremium: boolean
 	isSubscriptionReady: boolean
 	isSubscriptionConfigured: boolean
+	hasMissingProducts: boolean
 	monthlyPackage: PurchasesPackage | undefined
 	annualPackage: PurchasesPackage | undefined
 	refresh: () => Promise<void>
+	refreshOfferings: () => Promise<void>
+	refreshPremiumStatus: () => Promise<void>
 	purchase: (aPackage: PurchasesPackage) => Promise<void>
 	restore: () => Promise<void>
 	getPackageByPlan: (plan: BillingPlan) => PurchasesPackage | undefined
@@ -39,6 +42,8 @@ const FALLBACK_PRICING_IDS = {
 	monthly: ["monthly", "month"],
 	annual: ["annual", "year"],
 }
+
+const OFFERINGS_TIMEOUT_MS = 10_000
 
 const getPlatformApiKey = () => {
 	if (Platform.OS === "ios") {
@@ -84,6 +89,23 @@ const resolvePlanPackage = (
 	)
 }
 
+/** Races a promise against a timeout. Resolves to null on timeout instead of throwing. */
+async function withTimeout<T>(
+	promise: Promise<T>,
+	ms: number
+): Promise<T | null> {
+	let timeoutId: ReturnType<typeof setTimeout>
+	const timeoutPromise = new Promise<null>((resolve) => {
+		timeoutId = setTimeout(() => resolve(null), ms)
+	})
+	try {
+		const result = await Promise.race([promise, timeoutPromise])
+		return result
+	} finally {
+		clearTimeout(timeoutId!)
+	}
+}
+
 export const SubscriptionProvider: React.FC<React.PropsWithChildren> = ({
 	children,
 }) => {
@@ -101,12 +123,37 @@ export const SubscriptionProvider: React.FC<React.PropsWithChildren> = ({
 		setIsPremium(Boolean(customerInfo.entitlements.active[entitlementId]))
 	}, [])
 
+	const refreshOfferings = useCallback(async () => {
+		if (!isSubscriptionConfigured) return
+		try {
+			const fetched = await withTimeout(
+				Purchases.getOfferings(),
+				OFFERINGS_TIMEOUT_MS
+			)
+			setOfferings(fetched)
+		} catch {
+			// offerings stay as-is — app remains usable
+		}
+	}, [isSubscriptionConfigured])
+
+	const refreshPremiumStatus = useCallback(async () => {
+		if (!isSubscriptionConfigured) return
+		try {
+			const customerInfo = await Purchases.getCustomerInfo()
+			applyCustomerInfo(customerInfo)
+		} catch {
+			// best-effort — current isPremium value is retained
+		}
+	}, [applyCustomerInfo, isSubscriptionConfigured])
+
 	const refresh = useCallback(async () => {
 		if (!isSubscriptionConfigured) return
 
 		const [customerInfo, fetchedOfferings] = await Promise.all([
 			Purchases.getCustomerInfo(),
-			Purchases.getOfferings(),
+			withTimeout(Purchases.getOfferings(), OFFERINGS_TIMEOUT_MS).catch(
+				() => null
+			),
 		])
 		applyCustomerInfo(customerInfo)
 		setOfferings(fetchedOfferings)
@@ -225,6 +272,24 @@ export const SubscriptionProvider: React.FC<React.PropsWithChildren> = ({
 		[currentOffering]
 	)
 
+	// True when RC is configured and ready but neither package resolved —
+	// indicates the RevenueCat dashboard has no products configured yet.
+	const hasMissingProducts = useMemo(
+		() =>
+			isSubscriptionConfigured &&
+			isSubscriptionReady &&
+			offerings !== null &&
+			!monthlyPackage &&
+			!annualPackage,
+		[
+			isSubscriptionConfigured,
+			isSubscriptionReady,
+			offerings,
+			monthlyPackage,
+			annualPackage,
+		]
+	)
+
 	const getPackageByPlan = useCallback(
 		(plan: BillingPlan) =>
 			plan === "Monthly" ? monthlyPackage : annualPackage,
@@ -249,9 +314,12 @@ export const SubscriptionProvider: React.FC<React.PropsWithChildren> = ({
 			isPremium,
 			isSubscriptionReady,
 			isSubscriptionConfigured,
+			hasMissingProducts,
 			monthlyPackage,
 			annualPackage,
 			refresh,
+			refreshOfferings,
+			refreshPremiumStatus,
 			purchase,
 			restore,
 			getPackageByPlan,
@@ -260,9 +328,12 @@ export const SubscriptionProvider: React.FC<React.PropsWithChildren> = ({
 			isPremium,
 			isSubscriptionReady,
 			isSubscriptionConfigured,
+			hasMissingProducts,
 			monthlyPackage,
 			annualPackage,
 			refresh,
+			refreshOfferings,
+			refreshPremiumStatus,
 			purchase,
 			restore,
 			getPackageByPlan,
