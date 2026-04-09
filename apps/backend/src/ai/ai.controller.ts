@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards } from "@nestjs/common"
+import { Controller, Post, Body, UseGuards, Request } from "@nestjs/common"
 import { AiService } from "./ai.service"
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard"
 import { PremiumGuard } from "../premium/premium.guard"
@@ -15,7 +15,7 @@ export class AiController {
 	constructor(private readonly aiService: AiService) {}
 
 	@Post("coach")
-	coach(@Body() dto: CoachRequest) {
+	coach(@Request() req: { user: { id: string } }, @Body() dto: CoachRequest) {
 		return this.aiService.coach(dto)
 	}
 
@@ -30,7 +30,10 @@ export class AiController {
 	}
 
 	@Post("weekly-report")
-	weeklyReport(@Body() dto: WeeklyReportRequest) {
+	weeklyReport(
+		@Request() req: { user: { id: string } },
+		@Body() dto: WeeklyReportRequest,
+	) {
 		return this.aiService.weeklyReport(dto)
 	}
 }
